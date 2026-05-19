@@ -55,8 +55,14 @@ Variables de entorno configuradas en Vercel:
 
 ## Arrancar en local
 
+### Modo fácil (recomendado)
+1. Clonar el repo en una ruta corta (ej: `C:\verus-electrico\`)
+2. Copiar el archivo `.env` en la raíz (pedírselo a Imanolia — contiene DATABASE_URL)
+3. Doble clic en **`iniciar.bat`** — instala dependencias y abre el navegador solo
+
+### Modo manual
 ```powershell
-cd "SEGUNDA PRUEBA APLICACION VERUS ELECTRICO (skill medio lasso)\verus-electrico"
+cd verus-electrico
 npm install
 npm run dev
 # → http://localhost:3000
@@ -64,6 +70,13 @@ npm run dev
 
 Login de desarrollo: cualquier email @ghifurnaces.com en "Acceso de desarrollo".
 El hot reload es automático — no hace falta reiniciar al editar ficheros.
+
+### ⚠️ Problema ruta larga en Windows (solo si clonas en OneDrive con ruta muy larga)
+Turbopack falla con `path length exceeds max length of filesystem`. Solución:
+```cmd
+mklink /J C:\verus "C:\ruta\muy\larga\hasta\verus-electrico"
+```
+Luego abrir `iniciar.bat` desde `C:\verus\iniciar.bat`.
 
 ### Scripts útiles
 ```powershell
