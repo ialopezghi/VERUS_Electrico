@@ -1,0 +1,91 @@
+import { db } from "@/lib/db"
+import { auth } from "../../../auth"
+import { redirect } from "next/navigation"
+import { codProyecto, calcKpiFase } from "@/lib/kpi"
+import KpiCard from "@/components/ui/KpiCard"
+import ProyectoCard from "@/components/proyectos/ProyectoCard"
+
+export const dynamic = "force-dynamic"
+
+export default async function ProyectosPage() {
+  const session = await auth()
+  if (!session) redirect("/login")
+
+  const proyectos = await db.proyecto.findMany({
+    where: { deletedAt: null },
+    include: {
+      mangueras:        { where: { deletedAt: null } },
+      signalRecords:    { where: { deletedAt: null } },
+      protocoloPruebas: { where: { deletedAt: null } },
+    },
+    orderBy: [{ orden: "asc" }, { idh: "asc" }],
+  })
+
+  const counts = {
+    finalizados: proyectos.filter((p) => p.estado === "completado").length,
+    en_proceso:  proyectos.filter((p) => p.estado === "en_proceso").length,
+    activos:     proyectos.filter((p) => p.activo && p.estado !== "completado").length,
+    ofertados:   proyectos.filter((p) => p.estado === "ofertado").length,
+  }
+
+  // Agrupar por orden para el selector
+  const grupos: Record<number, typeof proyectos> = {}
+  for (const p of proyectos) {
+    if (!grupos[p.orden]) grupos[p.orden] = []
+    grupos[p.orden].push(p)
+  }
+
+  const proyectosConKpi = proyectos.map((p) => {
+    const fat = calcKpiFase({
+      mangueras:        p.mangueras.filter((m) => m.fase === "FAT"),
+      senales:          p.signalRecords.filter((s) => s.fase === "FAT"),
+      pruebas:          p.protocoloPruebas.filter((pr) => pr.fase === "FAT"),
+    })
+    const sat = calcKpiFase({
+      mangueras:        p.mangueras.filter((m) => m.fase === "SAT"),
+      senales:          p.signalRecords.filter((s) => s.fase === "SAT"),
+      pruebas:          p.protocoloPruebas.filter((pr) => pr.fase === "SAT"),
+    })
+    const total = (fat.pctFase + sat.pctFase) / 2
+    return { ...p, fat, sat, total, codigo: codProyecto(p.orden, p.idh) }
+  })
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: "#333333", marginBottom: 24, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+        Proyectos
+      </h1>
+
+      {/* KPI Cards */}
+      <div style={{ display: "flex", gap: 14, marginBottom: 28, flexWrap: "wrap" }}>
+        <KpiCard label="Finalizados" value={counts.finalizados} color="#22C55E"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="20 6 9 17 4 12"/></svg>}
+        />
+        <KpiCard label="En proceso" value={counts.en_proceso} color="#F59E0B"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+        />
+        <KpiCard label="Activos" value={counts.activos} color="#C0022C"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>}
+        />
+        <KpiCard label="Ofertados" value={counts.ofertados} color="#959595"
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
+        />
+      </div>
+
+      {/* Proyectos grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 16 }}>
+        {proyectosConKpi.map((p) => (
+          <ProyectoCard key={p.id} proyecto={p} />
+        ))}
+      </div>
+
+      {proyectos.length === 0 && (
+        <div style={{ textAlign: "center", padding: 80, color: "var(--color-muted)" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+          <div style={{ fontSize: 16, fontWeight: 500 }}>No hay proyectos</div>
+          <div style={{ fontSize: 13, marginTop: 8 }}>Crea un proyecto en Gestión Proyectos</div>
+        </div>
+      )}
+    </div>
+  )
+}

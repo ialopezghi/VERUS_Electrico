@@ -1,0 +1,264 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FaseMontaje {
+  FAT
+  SAT
+}
+
+enum EstadoProyecto {
+  ofertado
+  en_proceso
+  activo
+  completado
+  pausado
+  cancelado
+}
+
+enum RolUsuario {
+  ADMIN
+  JEFE_OBRA
+  OPERARIO
+  VISOR
+}
+
+model User {
+  id             String     @id @default(uuid()) @db.Uuid
+  email          String     @unique
+  nombre         String
+  numeroEmpleado Int?       @map("numero_empleado")
+  puesto         String?
+  rol            RolUsuario @default(OPERARIO)
+  activo         Boolean    @default(true)
+  asignaciones   Asignacion[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  @@map("user")
+  @@index([activo])
+}
+
+model Proyecto {
+  id         String         @id @default(uuid()) @db.Uuid
+  idh        String         @unique
+  orden      Int
+  nombre     String?
+  cliente    String?
+  ubicacion  String?
+  tipoEquipo String?        @map("tipo_equipo")
+  estado     EstadoProyecto @default(en_proceso)
+  activo     Boolean        @default(true)
+  pausado    Boolean        @default(false)
+
+  fatCanalIni DateTime? @map("fat_canal_ini") @db.Timestamptz
+  fatCanalFin DateTime? @map("fat_canal_fin") @db.Timestamptz
+  satCanalIni DateTime? @map("sat_canal_ini") @db.Timestamptz
+  satCanalFin DateTime? @map("sat_canal_fin") @db.Timestamptz
+  fatMangIni  DateTime? @map("fat_mang_ini")  @db.Timestamptz
+  fatMangFin  DateTime? @map("fat_mang_fin")  @db.Timestamptz
+  satMangIni  DateTime? @map("sat_mang_ini")  @db.Timestamptz
+  satMangFin  DateTime? @map("sat_mang_fin")  @db.Timestamptz
+  fatSenIni   DateTime? @map("fat_sen_ini")   @db.Timestamptz
+  fatSenFin   DateTime? @map("fat_sen_fin")   @db.Timestamptz
+  satSenIni   DateTime? @map("sat_sen_ini")   @db.Timestamptz
+  satSenFin   DateTime? @map("sat_sen_fin")   @db.Timestamptz
+  fatPruIni   DateTime? @map("fat_pru_ini")   @db.Timestamptz
+  fatPruFin   DateTime? @map("fat_pru_fin")   @db.Timestamptz
+  satPruIni   DateTime? @map("sat_pru_ini")   @db.Timestamptz
+  satPruFin   DateTime? @map("sat_pru_fin")   @db.Timestamptz
+
+  mangueras        Manguera[]
+  protocoloPruebas ProtocoloPrueba[]
+  signalRecords    SignalRecord[]
+  canalizaciones   Canalizacion[]
+  historicoAvances HistoricoAvance[]
+  asignaciones     Asignacion[]
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt      @map("updated_at") @db.Timestamptz
+  createdBy String    @map("created_by")
+  updatedBy String    @map("updated_by")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  version   Int       @default(1)
+
+  @@map("proyecto")
+  @@index([deletedAt])
+  @@index([estado])
+  @@index([orden])
+  @@index([activo])
+}
+
+// null = N/A, true = SI, false = NO
+model Manguera {
+  id                 String      @id @default(uuid()) @db.Uuid
+  proyectoId         String      @map("proyecto_id") @db.Uuid
+  fase               FaseMontaje
+  imei               String
+  origen             String?
+  destino            String?
+  descripcion        String?
+  comentarios        String?
+  metros             Decimal?    @db.Decimal(8, 2)
+  conectadoEnOrigen  Boolean?    @map("conectado_en_origen")
+  tendidoEnOrigen    Boolean?    @map("tendido_en_origen")
+  tendidoEnDestino   Boolean?    @map("tendido_en_destino")
+  conectadoEnDestino Boolean?    @map("conectado_en_destino")
+  revision           Int         @default(0)
+  proyecto           Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt      @map("updated_at") @db.Timestamptz
+  createdBy String    @map("created_by")
+  updatedBy String    @map("updated_by")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  version   Int       @default(1)
+
+  @@map("manguera")
+  @@index([deletedAt])
+  @@index([proyectoId])
+  @@index([fase])
+  @@index([proyectoId, fase])
+}
+
+model ProtocoloPrueba {
+  id            String      @id @default(uuid()) @db.Uuid
+  proyectoId    String      @map("proyecto_id") @db.Uuid
+  fase          FaseMontaje
+  identificador String
+  tipo          String?
+  descripcion   String?
+  valorTeorico  String?     @map("valor_teorico")
+  valorReal     String?     @map("valor_real")
+  comprobado    Boolean     @default(false)
+  comentarios   String?
+  revision      Int         @default(0)
+  proyecto      Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt      @map("updated_at") @db.Timestamptz
+  createdBy String    @map("created_by")
+  updatedBy String    @map("updated_by")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  version   Int       @default(1)
+
+  @@map("protocolo_prueba")
+  @@index([deletedAt])
+  @@index([proyectoId])
+  @@index([fase])
+}
+
+model SignalRecord {
+  id            String      @id @default(uuid()) @db.Uuid
+  proyectoId    String      @map("proyecto_id") @db.Uuid
+  fase          FaseMontaje
+  simbolico     String?
+  ime           String?
+  tipoSenhal    String?     @map("tipo_senhal")
+  signalName    String      @map("signal_name")
+  checkedStatus String      @default("") @map("checked_status")
+  comentarios   String?
+  revision      Int         @default(0)
+  proyecto      Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt      @map("updated_at") @db.Timestamptz
+  createdBy String    @map("created_by")
+  updatedBy String    @map("updated_by")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  version   Int       @default(1)
+
+  @@map("signal_record")
+  @@index([deletedAt])
+  @@index([proyectoId])
+  @@index([fase])
+}
+
+model Canalizacion {
+  id         String      @id @default(uuid()) @db.Uuid
+  proyectoId String      @map("proyecto_id") @db.Uuid
+  fase       FaseMontaje
+  imei       String
+  tipo       String
+  ubicacion  String
+  metros     Decimal?    @db.Decimal(8, 2)
+  revision   Int         @default(0)
+  proyecto   Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt      @map("updated_at") @db.Timestamptz
+  createdBy String    @map("created_by")
+  updatedBy String    @map("updated_by")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  version   Int       @default(1)
+
+  @@map("canalizacion")
+  @@index([deletedAt])
+  @@index([proyectoId])
+  @@index([fase])
+}
+
+model HistoricoAvance {
+  id         String   @id @default(uuid()) @db.Uuid
+  proyectoId String   @map("proyecto_id") @db.Uuid
+  fecha      DateTime @db.Timestamptz
+
+  porcentajeFat          Decimal @default(0) @map("porcentaje_fat")           @db.Decimal(5, 2)
+  porcentajePruebasFat   Decimal @default(0) @map("porcentaje_pruebas_fat")   @db.Decimal(5, 2)
+  porcentajeSenalesFat   Decimal @default(0) @map("porcentaje_senales_fat")   @db.Decimal(5, 2)
+  porcentajeManguerasFat Decimal @default(0) @map("porcentaje_mangueras_fat") @db.Decimal(5, 2)
+
+  porcentajeSat          Decimal @default(0) @map("porcentaje_sat")           @db.Decimal(5, 2)
+  porcentajePruebasSat   Decimal @default(0) @map("porcentaje_pruebas_sat")   @db.Decimal(5, 2)
+  porcentajeSenalesSat   Decimal @default(0) @map("porcentaje_senales_sat")   @db.Decimal(5, 2)
+  porcentajeManguerasSat Decimal @default(0) @map("porcentaje_mangueras_sat") @db.Decimal(5, 2)
+
+  porcentajeTotal Decimal @default(0) @map("porcentaje_total") @db.Decimal(5, 2)
+
+  proyecto  Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String   @map("created_by")
+
+  @@map("historico_avance")
+  @@index([proyectoId])
+  @@index([fecha])
+  @@index([proyectoId, fecha])
+}
+
+model Asignacion {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id")     @db.Uuid
+  proyectoId String   @map("proyecto_id") @db.Uuid
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String   @map("created_by")
+
+  @@unique([userId, proyectoId])
+  @@map("asignacion")
+  @@index([userId])
+  @@index([proyectoId])
+}
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  action      String
+  diff        Json?    @db.JsonB
+  performedAt DateTime @default(now()) @map("performed_at") @db.Timestamptz
+  performedBy String   @map("performed_by")
+
+  @@map("audit_log")
+  @@index([entityType, entityId])
+  @@index([performedAt])
+}

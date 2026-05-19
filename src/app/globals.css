@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Gotham — fuente corporativa GHI */
+@font-face {
+  font-family: "Gotham";
+  src: url("/fonts/Gotham-Book.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  src: url("/fonts/Gotham-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  src: url("/fonts/Gotham-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  src: url("/fonts/Gotham-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Gotham", "Helvetica Neue", Arial, sans-serif;
+
+  /* GHI Smart Furnaces — paleta principal */
+  --color-brand:       #C0022C;
+  --color-brand-dark:  #9A0022;
+  --color-bg:          #F2F2F2;
+  --color-sidebar:     #FEFEFE;
+  --color-surface:     #FEFEFE;
+  --color-border:      #E0E0E0;
+  --color-text:        #333333;
+  --color-muted:       #959595;
+  --color-neon:        #4AFF92;
+
+  /* Flags SI / NO / N·A */
+  --color-si:          #22C55E;
+  --color-si-bg:       #DCFCE7;
+  --color-si-text:     #15803D;
+
+  --color-no:          #EF4444;
+  --color-no-bg:       #FEE2E2;
+  --color-no-text:     #B91C1C;
+
+  --color-na:          #EAB308;
+  --color-na-bg:       #FEF9C3;
+  --color-na-text:     #A16207;
+
+  /* Radios GHI (industrial, compacto) */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  /* Sombras GHI */
+  --shadow-1: 0 1px 2px rgba(11,11,12,0.06), 0 1px 3px rgba(11,11,12,0.08);
+  --shadow-2: 0 2px 6px rgba(11,11,12,0.08), 0 4px 12px rgba(11,11,12,0.10);
+  --shadow-brand: 0 10px 40px -10px rgba(192,2,44,0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+
+/* Scrollbar sutil */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 2px; }
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.toggle-switch input { display: none; }
+.toggle-track {
+  width: 44px;
+  height: 24px;
+  background: #E0E0E0;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+.toggle-thumb {
+  position: absolute;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+input:checked ~ .toggle-track { background: #22C55E; }
+input:checked ~ .toggle-thumb { transform: translateX(20px); }
