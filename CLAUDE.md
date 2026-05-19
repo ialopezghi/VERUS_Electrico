@@ -35,12 +35,20 @@ git push
 
 ## Deploy — Vercel
 
-**Estado**: en proceso de configuración (19/05/2026)
+**Estado**: ✅ Live en `https://verus-electrico.vercel.app` (19/05/2026)
 
 Variables de entorno configuradas en Vercel:
 - `DATABASE_URL` → URL de Neon PostgreSQL
 - `AUTH_SECRET` → `ghi-verus-electrico-secret-2026-prod`
 - `NEXTAUTH_URL` → `https://verus-electrico.vercel.app` (sin espacios, exacto)
+- `AUTH_MICROSOFT_ENTRA_ID_ID` → Client ID de la Azure App Registration "VERUS Electrico"
+- `AUTH_MICROSOFT_ENTRA_ID_SECRET` → Client Secret (vercel-prod-2)
+- `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` → `aa0adef3-bffb-4b93-86ef-c77158ee71e5`
+
+**Azure App Registration** (tenant GHI):
+- Nombre: `VERUS Electrico`
+- Redirect URI: `https://verus-electrico.vercel.app/api/auth/callback/microsoft-entra-id`
+- Usuarios asignados: Imanolia Lopez, Iker Lasso (como colaboradores)
 
 **Errores ya resueltos en el build de Vercel:**
 1. TS error `tenantId` en auth.ts → `typescript: { ignoreBuildErrors: true }` en next.config.mjs
@@ -48,8 +56,14 @@ Variables de entorno configuradas en Vercel:
 3. `eslint` config en next.config.mjs no soportado en Next.js 16 → eliminado
 4. `NEXTAUTH_URL` con espacio doble → corregido en variables Vercel
 5. `useSearchParams()` sin Suspense → `LoginForm` envuelta en `<Suspense>` en login/page.tsx
+6. `domain_hint: "ghifurnaces.com"` en auth.ts → redirigía al SSO corporativo de GHI que bloqueaba la app nueva → eliminado
 
-**Último commit desplegado**: `847f81a` — Fix: wrap useSearchParams in Suspense
+**Último commit desplegado**: `ae59129` — Remove domain_hint from MicrosoftEntraID provider
+
+**⚠️ Pendiente — OAuthCallbackError en login Microsoft:**
+- Login con cuenta @ghifurnaces.com da `OAuthCallbackError` en producción
+- APLAZADO — por ahora usar solo "Acceso de desarrollo" (dev bypass)
+- Posible fix: añadir `AUTH_URL=https://verus-electrico.vercel.app` a Vercel env vars (Auth.js v5 usa AUTH_URL, no NEXTAUTH_URL)
 
 ---
 
@@ -268,6 +282,8 @@ codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
 | Prisma client en Vercel | Cache de deps | `"build": "prisma generate && next build"` |
 | `useSearchParams()` sin Suspense | Next.js 16 producción | Envolver en `<Suspense>` en login/page.tsx |
 | `git add src/app/(auth)/...` falla | PowerShell interpreta `(auth)` | Usar `git add -A` siempre |
+| `OAuthCallbackError` login Microsoft | Causa exacta pendiente de investigar | APLAZADO — usar dev bypass mientras; posible fix: añadir `AUTH_URL=https://verus-electrico.vercel.app` en Vercel |
+| Turbopack `path length exceeds max` | Proyecto en OneDrive con ruta ~130 chars | `mklink /J C:\verus "C:\ruta\larga"` y abrir desde `C:\verus` |
 
 ---
 
