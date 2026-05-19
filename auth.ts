@@ -7,9 +7,6 @@ const microsoftProvider = process.env.AUTH_MICROSOFT_ENTRA_ID_ID
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
       clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
       tenantId: process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID,
-      authorization: {
-        params: { domain_hint: "ghifurnaces.com" },
-      },
     })
   : null
 

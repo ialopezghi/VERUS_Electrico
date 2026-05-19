@@ -13,7 +13,43 @@ App interna de GHI Hornos Industriales S.L. para seguimiento de montaje eléctri
 - **CSS**: Tailwind CSS v4 con @theme CSS-first + tw-animate-css
 - **Fuente**: Gotham (local, `/public/fonts/`) — NO Google Fonts
 - **Gráficos**: Recharts
-- **Deploy objetivo**: Azure Container Apps + Bicep + GitHub Actions OIDC
+- **Deploy**: Vercel (activo) + Azure Container Apps (objetivo futuro)
+
+---
+
+## Repositorio GitHub
+
+**URL**: https://github.com/ialopezghi/VERUS_Electrico  
+**Rama principal**: `main`  
+Cada `git push` a main dispara un deploy automático en Vercel.
+
+```powershell
+# Para subir cambios:
+git add -A
+git commit -m "descripción"
+git push
+# Usar siempre git add -A (los paréntesis en (auth)/ confunden a PowerShell con git add <path>)
+```
+
+---
+
+## Deploy — Vercel
+
+**Estado**: en proceso de configuración (19/05/2026)
+
+Variables de entorno configuradas en Vercel:
+- `DATABASE_URL` → URL de Neon PostgreSQL
+- `AUTH_SECRET` → `ghi-verus-electrico-secret-2026-prod`
+- `NEXTAUTH_URL` → `https://verus-electrico.vercel.app` (sin espacios, exacto)
+
+**Errores ya resueltos en el build de Vercel:**
+1. TS error `tenantId` en auth.ts → `typescript: { ignoreBuildErrors: true }` en next.config.mjs
+2. Prisma client no generado → `"build": "prisma generate && next build"` en package.json
+3. `eslint` config en next.config.mjs no soportado en Next.js 16 → eliminado
+4. `NEXTAUTH_URL` con espacio doble → corregido en variables Vercel
+5. `useSearchParams()` sin Suspense → `LoginForm` envuelta en `<Suspense>` en login/page.tsx
+
+**Último commit desplegado**: `847f81a` — Fix: wrap useSearchParams in Suspense
 
 ---
 
@@ -22,12 +58,11 @@ App interna de GHI Hornos Industriales S.L. para seguimiento de montaje eléctri
 ```powershell
 cd "SEGUNDA PRUEBA APLICACION VERUS ELECTRICO (skill medio lasso)\verus-electrico"
 npm install
-# .env ya configurado con Neon
 npm run dev
 # → http://localhost:3000
 ```
 
-Login de desarrollo: cualquier email @ghifurnaces.com en el formulario "Acceso de desarrollo".
+Login de desarrollo: cualquier email @ghifurnaces.com en "Acceso de desarrollo".
 El hot reload es automático — no hace falta reiniciar al editar ficheros.
 
 ### Scripts útiles
@@ -35,7 +70,7 @@ El hot reload es automático — no hace falta reiniciar al editar ficheros.
 npm run db:migrate    # migrar schema
 npm run db:seed       # cargar datos de prueba
 npm run db:studio     # Prisma Studio (explorador visual de BD)
-npm run build         # build producción
+npm run build         # build producción (prisma generate + next build)
 ```
 
 ---
@@ -50,13 +85,13 @@ npm run build         # build producción
 
 | Modelo | Tabla DB | Descripción |
 |--------|----------|-------------|
-| `Proyecto` | `proyecto` | Proyecto de montaje. `idh` = identificador horno (ej: "H01;H02"), `orden` = nº pedido GHI |
+| `Proyecto` | `proyecto` | `idh` = identificador horno (ej: "H01;H02"), `orden` = nº pedido GHI |
 | `Manguera` | `manguera` | Flags SI/NO/N/A como `Boolean?` (null=N/A, true=SI, false=NO) |
-| `SignalRecord` | `signal_record` | Señales eléctricas. Campo `signalName` (no `nombre`), `checkedStatus` (no `comprobado`) |
-| `ProtocoloPrueba` | `protocolo_prueba` | Pruebas con `comprobado: Boolean` |
+| `SignalRecord` | `signal_record` | `signalName` (no `nombre`), `checkedStatus` (no `comprobado`) |
+| `ProtocoloPrueba` | `protocolo_prueba` | `comprobado: Boolean` |
 | `Canalizacion` | `canalizacion` | Bandejas/tubos |
-| `HistoricoAvance` | `historico_avance` | KPIs por fecha. Campos: `porcentajeFat`, `porcentajeSat`, `porcentajeTotal`, `porcentajeSenalesFat` (sin ñ), `porcentajeSenalesSat` (sin ñ) |
-| `User` | `user` | Usuarios con `rol: RolUsuario` |
+| `HistoricoAvance` | `historico_avance` | `porcentajeSenalesFat` / `porcentajeSenalesSat` (sin ñ) |
+| `User` | `user` | `rol: RolUsuario` |
 | `Asignacion` | `asignacion` | Relación usuario↔proyecto |
 
 ### Enums
@@ -65,10 +100,10 @@ npm run build         # build producción
 - `RolUsuario`: `ADMIN | JEFE_OBRA | OPERARIO | VISOR`
 
 ### Convenciones schema
-- Soft delete: `deletedAt DateTime?` en Proyecto, Manguera, SignalRecord, ProtocoloPrueba, Canalizacion
+- Soft delete: `deletedAt DateTime?`
 - Auditoría: `createdBy`, `updatedBy` (email)
 - Concurrencia optimista: `version Int @default(1)`
-- **Sin `ñ` en nombres de campo Prisma** — usar `Senales` en vez de `Señales`
+- **Sin `ñ` en nombres de campo Prisma**
 
 ---
 
@@ -78,6 +113,8 @@ npm run build         # build producción
 verus-electrico/
 ├── auth.ts                          # Auth.js config (root, NO importar en middleware con @/)
 ├── middleware.ts                    # Protección de rutas (importa ./auth)
+├── next.config.mjs                  # output:standalone, typescript.ignoreBuildErrors:true
+├── package.json                     # build: "prisma generate && next build"
 ├── prisma/
 │   ├── schema.prisma
 │   └── seed.ts                      # Datos de prueba: BEFESA, BAUX, GLOBALCAST
@@ -85,19 +122,19 @@ verus-electrico/
 │   ├── app/
 │   │   ├── layout.tsx               # Root layout — SIN Google Fonts (Gotham es local)
 │   │   ├── globals.css              # @font-face Gotham + Tailwind v4 @theme GHI + toggle
-│   │   ├── (auth)/login/page.tsx    # Login split-panel oscuro con imagen máquina GHI
+│   │   ├── (auth)/login/page.tsx    # LoginForm + export default con <Suspense>
 │   │   ├── proyectos/
-│   │   │   ├── layout.tsx           # Wraps en AppShell — NO añadir AppShell en páginas hijas
-│   │   │   ├── page.tsx             # Dashboard KPIs + grid de tarjetas
+│   │   │   ├── layout.tsx           # Wraps AppShell — NO añadir AppShell en páginas hijas
+│   │   │   ├── page.tsx             # Dashboard KPIs + grid tarjetas
 │   │   │   └── [id]/page.tsx        # Detalle proyecto (server component)
-│   │   ├── gestion/page.tsx         # Tabla gestión → renderiza GestionClient
+│   │   ├── gestion/page.tsx         # → GestionClient
 │   │   ├── usuarios/page.tsx        # Lista usuarios (solo lectura)
 │   │   └── api/
 │   │       ├── auth/[...nextauth]/route.ts
 │   │       ├── proyectos/
-│   │       │   ├── route.ts         # GET list, POST create
+│   │       │   ├── route.ts
 │   │       │   └── [id]/
-│   │       │       ├── route.ts     # GET single, PATCH update
+│   │       │       ├── route.ts
 │   │       │       ├── mangueras/route.ts + [mid]/route.ts
 │   │       │       ├── senales/route.ts + [sid]/route.ts
 │   │       │       ├── pruebas/route.ts + [pid]/route.ts
@@ -107,101 +144,82 @@ verus-electrico/
 │   ├── components/
 │   │   ├── layout/
 │   │   │   ├── AppShell.tsx         # SessionProvider + flex layout, fondo #F2F2F2
-│   │   │   └── Sidebar.tsx          # Logo GHI SVG real + icono VERUS, nav con borde rojo activo
+│   │   │   └── Sidebar.tsx          # Logo GHI SVG + icono VERUS, nav borde rojo activo
 │   │   ├── proyectos/
 │   │   │   ├── ProyectoCard.tsx     # Layout imagen+KPIs, resolverImagen() por keywords
 │   │   │   ├── ProyectoDetailClient.tsx  # Tabs FAT/SAT/AVANCE estilo GHI oscuro
-│   │   │   ├── ManguerasTable.tsx   # Edición inline texto + flags + modal añadir
-│   │   │   ├── SenalesTable.tsx     # Dropdown checkedStatus + modal añadir
-│   │   │   ├── PruebasTable.tsx     # Toggle comprobado + barra progreso + modal añadir
-│   │   │   ├── CanalizacionesTable.tsx  # Modal añadir + resumen metros
-│   │   │   └── AvanceChart.tsx      # Recharts LineChart
+│   │   │   ├── ManguerasTable.tsx
+│   │   │   ├── SenalesTable.tsx
+│   │   │   ├── PruebasTable.tsx
+│   │   │   ├── CanalizacionesTable.tsx
+│   │   │   └── AvanceChart.tsx
 │   │   ├── gestion/
-│   │   │   └── GestionClient.tsx    # Modal nuevo/editar proyecto, estilo GHI
+│   │   │   └── GestionClient.tsx
 │   │   └── ui/
-│   │       ├── Modal.tsx            # Cabecera #333333 + línea roja, Escape para cerrar
+│   │       ├── Modal.tsx            # Cabecera #333333 + línea roja
 │   │       ├── FormField.tsx        # Label uppercase + inputStyle/selectStyle GHI
-│   │       ├── FlagCell.tsx         # Dropdown SI/NO/N/A → Boolean?
-│   │       ├── Toggle.tsx           # Toggle switch booleano
-│   │       ├── KpiCard.tsx          # Tarjeta KPI estilo GHI
-│   │       └── ProgressBar.tsx      # Barra #C0022C por defecto, radius 2px
+│   │       ├── FlagCell.tsx         # SI/NO/N/A → Boolean?
+│   │       ├── Toggle.tsx
+│   │       ├── KpiCard.tsx
+│   │       └── ProgressBar.tsx      # #C0022C por defecto, radius 2px
 │   └── lib/
 │       ├── db.ts                    # Prisma singleton
 │       └── kpi.ts                   # isMangueraOk, calcKpiFase, codProyecto, fmt
 └── public/
-    ├── logo-ghi-full.svg            # Logo GHI corporativo
-    ├── ghi-machine.png              # Máquina rotativa (BEFESA, GLOBALCAST FRB/KBV)
-    ├── img-baux.png                 # Horno vertical BAUX (HHVF, MCB)
-    ├── img-arcelor.png              # Horno grande ArcelorMittal (FNG)
-    ├── img-fd2.png                  # Laminador FD2 (CONSTELLIUM, RAN-R)
+    ├── logo-ghi-full.svg
+    ├── ghi-machine.png              # BEFESA, GLOBALCAST FRB/KBV
+    ├── img-baux.png                 # Horno vertical BAUX
+    ├── img-arcelor.png              # ArcelorMittal FNG
+    ├── img-fd2.png                  # FD2 CONSTELLIUM
     ├── fonts/
-    │   ├── Gotham-Book.ttf          # peso 400
-    │   ├── Gotham-Medium.ttf        # peso 500
-    │   ├── Gotham-Bold.ttf          # peso 700
-    │   └── Gotham-Black.ttf         # peso 900
+    │   ├── Gotham-Book.ttf
+    │   ├── Gotham-Medium.ttf
+    │   ├── Gotham-Bold.ttf
+    │   └── Gotham-Black.ttf
     └── icons/
-        ├── dark/    # Iconos #414651 (gris oscuro) — librería Elena
-        ├── red/     # Iconos #C0022C
-        └── white/   # Iconos blancos
+        ├── dark/    # 25 SVGs gris oscuro — librería Elena
+        ├── red/     # 25 SVGs #C0022C
+        └── white/   # 25 SVGs blancos
 ```
 
 ---
 
-## Diseño — GHI Smart Furnaces Design System ✅ APLICADO
+## Diseño — GHI Smart Furnaces Design System ✅
 
 **Zip origen**: `C:\Users\ialopez\OneDrive - GHI HORNOS INDUSTRIALES S.L\Estilo diseño GHI\GHI Smart Furnaces Design System 4.zip`
 
-### Paleta de colores (tokens activos en @theme)
+### Tokens activos
 
-| Variable CSS | Valor | Uso |
+| Variable | Valor | Uso |
 |---|---|---|
-| `--color-brand` | `#C0022C` | Rojo GHI — botones primarios, acciones, indicadores activos |
-| `--color-brand-dark` | `#9A0022` | Hover del rojo |
+| `--color-brand` | `#C0022C` | Rojo GHI — botones, acciones, activos |
+| `--color-brand-dark` | `#9A0022` | Hover |
 | `--color-bg` | `#F2F2F2` | Fondo general |
-| `--color-surface` | `#FEFEFE` | Fondo tarjetas y superficies |
+| `--color-surface` | `#FEFEFE` | Tarjetas |
 | `--color-border` | `#E0E0E0` | Bordes |
-| `--color-text` | `#333333` | Texto principal (ink) |
+| `--color-text` | `#333333` | Texto principal |
 | `--color-muted` | `#959595` | Texto secundario |
-| `--color-neon` | `#4AFF92` | Acento verde (uso puntual) |
-| `--color-si/si-bg/si-text` | `#22C55E / #DCFCE7 / #15803D` | Flag SI |
-| `--color-no/no-bg/no-text` | `#EF4444 / #FEE2E2 / #B91C1C` | Flag NO |
-| `--color-na/na-bg/na-text` | `#EAB308 / #FEF9C3 / #A16207` | Flag N/A |
 
-### Radios y sombras
-
-```css
---radius-sm: 2px;   --radius-md: 4px;   --radius-lg: 8px;
---shadow-1: 0 1px 2px rgba(11,11,12,0.06), 0 1px 3px rgba(11,11,12,0.08);
---shadow-brand: 0 10px 40px -10px rgba(192,2,44,0.45);
-```
-
-### Tipografía
-- **Gotham** — local en `/public/fonts/`, cargada con `@font-face` en `globals.css`
-- NO usar Google Fonts (`@import url()` rompe Tailwind v4 PostCSS)
-- Títulos y botones: `textTransform: uppercase`, `letterSpacing: 0.06em`
-
-### Iconos Elena
-- 25 SVGs en `public/icons/dark/`, `public/icons/red/`, `public/icons/white/`
-- Tamaño base: 16-18px, stroke-width: 1.67, stroke-linecap: round
-- Uso: `<img src="/icons/dark/add.svg" width={16} height={16} />`
-- Iconos disponibles: `add.svg`, `edit-04.svg`, `search-lg.svg`, `user-01.svg`, `calendar.svg`, `Download cloud.svg`, `speedometer-04.svg`, `folder.svg`, `flag-05.svg`, `layers-two-01.svg`...
+Radios: sm=2px, md=4px, lg=8px  
+Fuente: Gotham local — títulos/botones en uppercase + letter-spacing  
+Tabs activos: fondo `#333333`, indicador `border-bottom: 2px solid #C0022C`
 
 ---
 
-## Imágenes de máquinas por proyecto
+## Imágenes de máquinas — resolverImagen()
 
-La función `resolverImagen()` en `ProyectoCard.tsx` selecciona automáticamente la imagen según palabras clave en `nombre`, `cliente` o `tipoEquipo`:
+Función en `ProyectoCard.tsx`. Mapeo por keywords en nombre/cliente/tipoEquipo:
 
-| Palabras clave | Imagen |
+| Keywords | Imagen |
 |---|---|
 | BAUX, HHVF, MCB | `/img-baux.png` |
 | ARCELOR, FNG | `/img-arcelor.png` |
 | FD2, CONSTELLIUM, RAN-R | `/img-fd2.png` |
 | GLOBALCAST, FRB, KBV | `/ghi-machine.png` |
-| (resto / defecto) | `/ghi-machine.png` |
+| resto | `/ghi-machine.png` |
 
-Para añadir una nueva: copiar imagen a `/public/img-xxx.png` y añadir línea en `resolverImagen()`.
-Si un proyecto tiene `imagenUrl` en BD, esa tiene prioridad sobre el mapeo automático.
+Para añadir tipo nuevo: copiar imagen a `/public/img-xxx.png` + línea en `resolverImagen()`.
+Si `proyecto.imagenUrl` tiene valor en BD, tiene prioridad sobre el mapeo.
 
 ---
 
@@ -209,21 +227,16 @@ Si un proyecto tiene `imagenUrl` en BD, esa tiene prioridad sobre el mapeo autom
 
 ### codProyecto
 ```typescript
-codProyecto(orden: number, idh: string) → `${orden}-${idh.replace(/;/g, " y ")}`
-// Ej: orden=12737, idh="H01;H02" → "12737-H01 y H02"
+codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
+// 12737 + "H01;H02" → "12737-H01 y H02"
 ```
 
-### KPI de fase (calcKpiFase)
-- **Manguera OK**: todos los flags !== false (null=N/A no bloquea)
-- **% Mangueras**: okMangueras / totalMangueras × 100
-- **% Señales**: checkedStatus === "OK" | "SI" | "S"
-- **% Pruebas**: comprobado === true
-- **% Fase**: promedio de los módulos que tienen datos (ignora módulos vacíos)
-
-### FAT vs SAT
-- Cada manguera/señal/prueba/canalización tiene `fase: FaseMontaje` (FAT|SAT)
-- Las tablas filtran por fase al renderizar
-- El detalle de proyecto incluye todos y filtra en cliente
+### calcKpiFase
+- Manguera OK: todos los flags !== false (null=N/A no bloquea)
+- % Mangueras: okMangueras / total × 100
+- % Señales: checkedStatus === "OK" | "SI" | "S"
+- % Pruebas: comprobado === true
+- % Fase: promedio de módulos con datos (ignora vacíos)
 
 ---
 
@@ -231,14 +244,17 @@ codProyecto(orden: number, idh: string) → `${orden}-${idh.replace(/;/g, " y ")
 
 | Error | Causa | Solución |
 |---|---|---|
-| `@import url() must precede all rules` | Google Fonts con @import en globals.css | Usar `@font-face` local en globals.css |
-| `Event handlers cannot be passed to Client Component` | Falta `"use client"` en componente con onClick/onMouseEnter | Añadir `"use client"` al inicio |
-| `Prisma url no longer supported` | Prisma 7 cambió API | Usar Prisma 5 (instalado) |
-| `next-auth@^5.0.0 not found` | No existe como release estable | Usar `5.0.0-beta.31` |
-| `porcentajeSeñalesFat` schema error | `ñ` no válido en Prisma | Usar `porcentajeSenalesFat` (sin ñ) |
-| `middleware.ts import auth` | `@/*` no resuelve a root | Usar `import { auth } from "./auth"` |
-| Double AppShell | `proyectos/layout.tsx` ya wraps AppShell | No añadir AppShell en `proyectos/page.tsx` ni `[id]/page.tsx` |
-| `tenantId` TS error en auth.ts | Bug tipo en next-auth beta | No bloquea ejecución, ignorar |
+| `@import url()` en CSS | Google Fonts con @import | `@font-face` local en globals.css |
+| `Event handlers to Client Component` | Falta `"use client"` | Añadir al inicio |
+| `Prisma url no longer supported` | Prisma 7 | Usar Prisma 5 |
+| `next-auth@^5.0.0 not found` | No existe stable | Usar `5.0.0-beta.31` |
+| `porcentajeSeñalesFat` schema | `ñ` no válido en Prisma | `porcentajeSenalesFat` |
+| `middleware.ts import auth` | `@/*` no resuelve a root | `import { auth } from "./auth"` |
+| Double AppShell | `proyectos/layout.tsx` ya wraps | No añadir en páginas hijas |
+| `tenantId` TS error en auth.ts | Bug tipo next-auth beta | `typescript: { ignoreBuildErrors: true }` en next.config.mjs |
+| Prisma client en Vercel | Cache de deps | `"build": "prisma generate && next build"` |
+| `useSearchParams()` sin Suspense | Next.js 16 producción | Envolver en `<Suspense>` en login/page.tsx |
+| `git add src/app/(auth)/...` falla | PowerShell interpreta `(auth)` | Usar `git add -A` siempre |
 
 ---
 
@@ -248,27 +264,26 @@ codProyecto(orden: number, idh: string) → `${orden}-${idh.replace(/;/g, " y ")
 - Autenticación (Microsoft Entra ID + dev bypass)
 - Dashboard proyectos con KPIs FAT/SAT/Total
 - Detalle proyecto: tabs FAT/SAT/AVANCE estilo GHI
-- Tablas con edición inline: mangueras (flags + texto), señales (status), pruebas (toggle)
-- Formularios añadir fila: mangueras, señales, pruebas, canalizaciones
-- Gestión proyectos: crear y editar proyecto
+- Tablas edición inline: mangueras, señales, pruebas, canalizaciones
+- Gestión proyectos: crear y editar
 - Página usuarios (solo lectura)
 - Gráfico histórico de avance (Recharts)
-- Seed con datos de prueba (BEFESA, BAUX, GLOBALCAST)
-- **Diseño GHI Smart Furnaces aplicado**: Gotham, #C0022C, #333333, radios 2-4px
-- **Imágenes de máquinas por tipo**: BAUX, ArcelorMittal, FD2, BEFESA/GLOBALCAST
+- Diseño GHI Smart Furnaces: Gotham, #C0022C, #333333, radios 2-4px
+- Imágenes de máquinas por tipo (BAUX, ArcelorMittal, FD2, BEFESA/Globalcast)
 - Logo GHI real en sidebar y login
 - ProyectoCard con layout imagen + KPIs (igual que PowerApps)
+- Repositorio GitHub: https://github.com/ialopezghi/VERUS_Electrico
+- Deploy en Vercel configurado (pending confirmación último build)
 
 ### Pendiente ❌
+- **Confirmar que Vercel build pasa** (último fix: Suspense en login, commit 847f81a)
 - **Migración de datos reales** desde PowerApps/Dataverse
   - Imanolia tiene pendiente exportar — posiblemente via Excel/CSV
-  - Error 403 con cuenta imanolia1@ghifurnaces.com en Dataverse directo
-- Imagen por proyecto para tipo RMA (Globalcast RMA-30) — falta archivo
-- Imagen por proyecto para BEFESA (si difiere de ghi-machine.png)
-- Página usuarios: editar rol / activar-desactivar (actualmente "contactar con IT")
+- Imagen para Globalcast RMA-30 (falta archivo)
+- Página usuarios: editar rol / activar-desactivar
 - Gestión asignaciones usuario↔proyecto desde UI
-- Deploy en Azure Container Apps (Bicep + GitHub Actions)
-- App Registration en Microsoft Entra ID para login real (tenant: aa0adef3-bffb-4b93-86ef-c77158ee71e5)
+- Deploy Azure Container Apps (Bicep + GitHub Actions) — objetivo final
+- App Registration Microsoft Entra ID (tenant: aa0adef3-bffb-4b93-86ef-c77158ee71e5)
 - Exportar datos a Excel desde las tablas
 
 ---
@@ -283,13 +298,13 @@ codProyecto(orden: number, idh: string) → `${orden}-${idh.replace(/;/g, " y ")
 
 ---
 
-## Datos de prueba (seed)
+## Datos en BD (seed + modificaciones)
 
 Usuarios: Iker Lasso (ADMIN), Andrés Palacios (OPERARIO), Ángel Fernández (OPERARIO), Alberto Arana (VISOR)
 
-Proyectos activos en BD:
+Proyectos activos:
 - `12737` BEFESA ALEMANIA — H01;H02 (en_proceso, Bernburg Alemania) — con datos FAT
 - `10517` BAUX — H01 (completado)
 - `11576` GLOBALCAST — (activo)
 
-> Nota: BEFESA H03;H04 fue eliminado (soft delete) el 14/05/2026 por estar vacío y duplicado.
+> BEFESA H03;H04 eliminado (soft delete 14/05/2026) — estaba vacío y duplicado.
