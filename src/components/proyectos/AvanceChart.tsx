@@ -10,8 +10,7 @@ interface HistoricoAvance {
   id: string
   fecha: Date | string
   porcentajeFat:            number | string
-  porcentajeTendidoFat:     number | string
-  porcentajeConectadoFat:   number | string
+  porcentajeManguerasFat:   number | string
   porcentajeSenalesFat:     number | string
   porcentajePruebasFat:     number | string
   porcentajeSat:            number | string
@@ -27,10 +26,13 @@ type AvanceTab = "FAT" | "SAT" | "TOTAL"
 
 function fmtFecha(d: Date | string) {
   const dt = typeof d === "string" ? new Date(d) : d
-  return `${dt.getDate().toString().padStart(2, "0")}/${(dt.getMonth() + 1).toString().padStart(2, "0")}`
+  const dia  = dt.getDate().toString().padStart(2, "0")
+  const mes  = (dt.getMonth() + 1).toString().padStart(2, "0")
+  const hora = dt.getHours().toString().padStart(2, "0") + ":" + dt.getMinutes().toString().padStart(2, "0")
+  return { short: `${dia}/${mes}`, full: `${dia} mayo ${dt.getFullYear()} ${hora}:00` }
 }
-const n = (v: number | string) => Number(v)
-const p2 = (v: number | string) => `${n(v).toFixed(1)}%`
+const n   = (v: number | string) => Number(v)
+const p2  = (v: number | string) => `${n(v).toFixed(2)} %`
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
@@ -38,7 +40,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
   return (
     <div style={{
       background: "#1C1C1C", borderRadius: 4, padding: "10px 14px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.3)", minWidth: 160,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.3)", minWidth: 180,
     }}>
       <div style={{ fontSize: 11, color: "#959595", marginBottom: 8, fontWeight: 600, letterSpacing: "0.06em" }}>
         {label}
@@ -46,7 +48,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
       {payload.map((entry) => (
         <div key={entry.name} style={{ display: "flex", justifyContent: "space-between", gap: 20, marginBottom: 4 }}>
           <span style={{ fontSize: 12, color: entry.color, fontWeight: 500 }}>{entry.name}</span>
-          <span style={{ fontSize: 12, color: "#FEFEFE", fontWeight: 700 }}>{entry.value?.toFixed(1)}%</span>
+          <span style={{ fontSize: 12, color: "#FEFEFE", fontWeight: 700 }}>{entry.value?.toFixed(2)} %</span>
         </div>
       ))}
     </div>
@@ -55,7 +57,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
 
 // ── TH / TD ──────────────────────────────────────────────────────────────────
 const TH = ({ children }: { children: React.ReactNode }) => (
-  <th style={{ padding: "9px 14px", textAlign: "left", fontWeight: 600, color: "#959595", fontSize: 11, borderBottom: "1px solid #E0E0E0", background: "#F7F7F7", whiteSpace: "nowrap", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+  <th style={{ padding: "9px 14px", textAlign: "left", fontWeight: 600, color: "#595959", fontSize: 12, borderBottom: "1px solid #E0E0E0", background: "#FAFAFA", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
     {children}
   </th>
 )
@@ -65,111 +67,68 @@ const TD = ({ children, bold }: { children: React.ReactNode; bold?: boolean }) =
   </td>
 )
 
-// ── Flecha de flujo ───────────────────────────────────────────────────────────
-function FlowArrow({ steps }: { steps: { label: string; color: string }[] }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "10px 16px", background: "#F7F7F7", borderBottom: "1px solid #E0E0E0", flexWrap: "wrap", gap: 4 }}>
-      {steps.map((s, i) => (
-        <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "3px 10px", borderRadius: 2, fontSize: 11, fontWeight: 700,
-            background: `${s.color}18`, color: s.color, letterSpacing: "0.04em",
-            border: `1px solid ${s.color}40`,
-          }}>
-            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: s.color }} />
-            {s.label}
-          </span>
-          {i < steps.length - 1 && (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C0C0C0" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export default function AvanceChart({ historico, codigo }: Props) {
   const [tab, setTab] = useState<AvanceTab>("FAT")
   const sorted = [...historico].sort((a, b) => new Date(String(a.fecha)).getTime() - new Date(String(b.fecha)).getTime())
 
+  // ── Datos para el gráfico ──────────────────────────────────────────────────
   const fatData = sorted.map((h) => ({
-    fecha:        fmtFecha(h.fecha),
-    "Cableado":   n(h.porcentajeTendidoFat),
-    "Conectado":  n(h.porcentajeConectadoFat),
-    "Señales":    n(h.porcentajeSenalesFat),
-    "Pruebas":    n(h.porcentajePruebasFat),
-    "Total FAT":  n(h.porcentajeFat),
+    fecha:          fmtFecha(h.fecha).short,
+    "AvanceFAT":    n(h.porcentajeFat),
+    "ManguerasFAT": n(h.porcentajeManguerasFat),
+    "SeñalesFAT":   n(h.porcentajeSenalesFat),
+    "PruebasFAT":   n(h.porcentajePruebasFat),
   }))
 
   const satData = sorted.map((h) => ({
-    fecha:        fmtFecha(h.fecha),
-    "PEM":        n(h.porcentajeManguerasSat),
-    "PF":         n(h.porcentajeManguerasPfSat),
-    "Señales":    n(h.porcentajeSenalesSat),
-    "Pruebas":    n(h.porcentajePruebasSat),
-    "Total SAT":  n(h.porcentajeSat),
+    fecha:          fmtFecha(h.fecha).short,
+    "AvanceSAT":    n(h.porcentajeSat),
+    "ManguerasPEM": n(h.porcentajeManguerasSat),
+    "ManguerasPF":  n(h.porcentajeManguerasPfSat),
+    "SeñalesSAT":   n(h.porcentajeSenalesSat),
+    "PruebasSAT":   n(h.porcentajePruebasSat),
   }))
 
   const totalData = sorted.map((h) => ({
-    fecha:         fmtFecha(h.fecha),
-    "FAT":         n(h.porcentajeFat),
-    "SAT":         n(h.porcentajeSat),
-    "Total":       n(h.porcentajeTotal),
+    fecha:          fmtFecha(h.fecha).short,
+    "AvanceFAT":    n(h.porcentajeFat),
+    "AvanceSAT":    n(h.porcentajeSat),
+    "AvanceTOTAL":  n(h.porcentajeTotal),
   }))
 
+  // ── Config por pestaña ─────────────────────────────────────────────────────
   const config = {
     FAT: {
-      flow: [
-        { label: "Cableado",  color: "#1E3A5F" },
-        { label: "Conectado", color: "#3B82F6" },
-        { label: "Señales",   color: "#EA580C" },
-        { label: "Pruebas",   color: "#7C3AED" },
-      ],
-      cols:      ["% Cableado", "% Conectado", "% Señales", "% Pruebas", "% Total FAT"],
-      rows:      sorted.map((h) => [p2(h.porcentajeTendidoFat), p2(h.porcentajeConectadoFat), p2(h.porcentajeSenalesFat), p2(h.porcentajePruebasFat), p2(h.porcentajeFat)]),
+      cols:      ["% Mangueras FAT", "% Señales FAT", "% Pruebas FAT", "% Total FAT"],
+      rows:      sorted.map((h) => [p2(h.porcentajeManguerasFat), p2(h.porcentajeSenalesFat), p2(h.porcentajePruebasFat), p2(h.porcentajeFat)]),
       chartData: fatData,
       lines: [
-        { key: "Total FAT",  color: "#C0022C", width: 2.5 },
-        { key: "Cableado",   color: "#1E3A5F", width: 2 },
-        { key: "Conectado",  color: "#3B82F6", width: 2 },
-        { key: "Señales",    color: "#EA580C", width: 2 },
-        { key: "Pruebas",    color: "#7C3AED", width: 2 },
+        { key: "AvanceFAT",    color: "#3B82F6", width: 2 },
+        { key: "ManguerasFAT", color: "#1E3A8A", width: 2 },
+        { key: "SeñalesFAT",   color: "#EA580C", width: 2 },
+        { key: "PruebasFAT",   color: "#7C3AED", width: 2 },
       ],
     },
     SAT: {
-      flow: [
-        { label: "PEM", color: "#1E40AF" },
-        { label: "PF",  color: "#EA580C" },
-        { label: "Señales", color: "#7C3AED" },
-        { label: "Pruebas", color: "#DB2777" },
-      ],
-      cols:      ["% PEM", "% PF", "% Señales", "% Pruebas", "% Total SAT"],
+      cols:      ["% Mangueras PEM SAT", "% Mangueras PF SAT", "% Señales SAT", "% Pruebas SAT", "% Total SAT"],
       rows:      sorted.map((h) => [p2(h.porcentajeManguerasSat), p2(h.porcentajeManguerasPfSat), p2(h.porcentajeSenalesSat), p2(h.porcentajePruebasSat), p2(h.porcentajeSat)]),
       chartData: satData,
       lines: [
-        { key: "Total SAT", color: "#C0022C", width: 2.5 },
-        { key: "PEM",       color: "#1E40AF", width: 2 },
-        { key: "PF",        color: "#EA580C", width: 2 },
-        { key: "Señales",   color: "#7C3AED", width: 2 },
-        { key: "Pruebas",   color: "#DB2777", width: 2 },
+        { key: "AvanceSAT",    color: "#3B82F6", width: 2 },
+        { key: "ManguerasPEM", color: "#1E3A8A", width: 2 },
+        { key: "ManguerasPF",  color: "#EA580C", width: 2 },
+        { key: "SeñalesSAT",   color: "#7C3AED", width: 2 },
+        { key: "PruebasSAT",   color: "#DB2777", width: 2 },
       ],
     },
     TOTAL: {
-      flow: [
-        { label: "FAT",   color: "#1E40AF" },
-        { label: "SAT",   color: "#3B82F6" },
-        { label: "Total", color: "#C0022C" },
-      ],
-      cols:      ["% FAT", "% SAT", "% Total"],
+      cols:      ["% Avance FAT", "% Avance SAT", "% Avance TOTAL"],
       rows:      sorted.map((h) => [p2(h.porcentajeFat), p2(h.porcentajeSat), p2(h.porcentajeTotal)]),
       chartData: totalData,
       lines: [
-        { key: "Total", color: "#C0022C", width: 2.5 },
-        { key: "FAT",   color: "#1E40AF", width: 2 },
-        { key: "SAT",   color: "#3B82F6", width: 2 },
+        { key: "AvanceFAT",   color: "#3B82F6", width: 2 },
+        { key: "AvanceSAT",   color: "#1E3A8A", width: 2 },
+        { key: "AvanceTOTAL", color: "#EA580C", width: 2 },
       ],
     },
   }
@@ -178,7 +137,7 @@ export default function AvanceChart({ historico, codigo }: Props) {
 
   return (
     <div>
-      {/* Tabs */}
+      {/* Sub-tabs FAT / SAT / TOTAL */}
       <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #E0E0E0", background: "#FAFAFA" }}>
         {(["FAT", "SAT", "TOTAL"] as AvanceTab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} style={{
@@ -195,15 +154,12 @@ export default function AvanceChart({ historico, codigo }: Props) {
         ))}
       </div>
 
-      {/* Flujo de pasos */}
-      <FlowArrow steps={active.flow} />
-
       {/* Tabla histórica */}
       <div style={{ overflowX: "auto", borderBottom: "1px solid #E0E0E0" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
-              <TH>Fecha</TH>
+              <TH>Identificador</TH>
               {active.cols.map((c) => <TH key={c}>{c}</TH>)}
             </tr>
           </thead>
@@ -211,13 +167,15 @@ export default function AvanceChart({ historico, codigo }: Props) {
             {sorted.length === 0 && (
               <tr><td colSpan={active.cols.length + 1} style={{ padding: 40, textAlign: "center", color: "#959595" }}>Sin datos históricos</td></tr>
             )}
-            {sorted.map((h, i) => (
-              <tr key={String(h.id)} style={{ background: "white", borderLeft: i === sorted.length - 1 ? "3px solid #C0022C" : "3px solid transparent" }}>
+            {[...sorted].reverse().map((h, i) => (
+              <tr key={String(h.id)} style={{ background: "white", borderLeft: i === 0 ? "3px solid #C0022C" : "3px solid transparent" }}>
                 <td style={{ padding: "10px 14px", borderBottom: "1px solid #F3F4F6" }}>
-                  <span style={{ fontWeight: 700, color: "#333333", fontSize: 13 }}>{codigo}</span>
-                  <span style={{ fontSize: 11, color: "#959595", marginLeft: 6 }}>{fmtFecha(h.fecha)}</span>
+                  <div style={{ fontWeight: 700, color: "#333333", fontSize: 13 }}>{codigo}</div>
+                  <div style={{ fontSize: 11, color: "#959595", marginTop: 1 }}>{fmtFecha(h.fecha).full}</div>
                 </td>
-                {active.rows[i].map((v, j) => <TD key={j} bold={j === active.cols.length - 1}>{v}</TD>)}
+                {active.rows[sorted.length - 1 - i].map((v, j) => (
+                  <TD key={j} bold={j === active.cols.length - 1}>{v}</TD>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -226,7 +184,7 @@ export default function AvanceChart({ historico, codigo }: Props) {
 
       {/* Gráfico */}
       {sorted.length > 0 && (
-        <div style={{ padding: "24px 16px 16px", background: "white" }}>
+        <div style={{ padding: "24px 16px 8px", background: "white" }}>
           <ResponsiveContainer width="100%" height={340}>
             <LineChart data={active.chartData} margin={{ top: 10, right: 24, left: -8, bottom: 8 }}>
               <CartesianGrid strokeDasharray="0" stroke="#F0F0F0" vertical={false} />
@@ -242,11 +200,11 @@ export default function AvanceChart({ historico, codigo }: Props) {
                 tick={{ fontSize: 11, fill: "#959595" }}
                 axisLine={false}
                 tickLine={false}
-                ticks={[0, 25, 50, 75, 100]}
+                ticks={[0, 20, 40, 60, 80, 100]}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend
-                wrapperStyle={{ fontSize: 12, paddingTop: 16 }}
+                wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
                 iconType="circle"
                 iconSize={8}
               />
@@ -257,7 +215,7 @@ export default function AvanceChart({ historico, codigo }: Props) {
                   dataKey={l.key}
                   stroke={l.color}
                   strokeWidth={l.width}
-                  dot={{ r: 3, fill: l.color, strokeWidth: 0 }}
+                  dot={{ r: 2.5, fill: l.color, strokeWidth: 0 }}
                   activeDot={{ r: 5, fill: l.color, strokeWidth: 2, stroke: "white" }}
                   isAnimationActive={false}
                 />
