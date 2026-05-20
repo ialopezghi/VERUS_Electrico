@@ -578,29 +578,30 @@ async function main() {
 
   // ── HISTÓRICO AVANCE ───────────────────────────────────────────────────────
   console.log("Insertando histórico de avance...")
+  // pem/pf = mangueras SAT reales según PowerApps (PEM 96.49%, PF 96.64% al final)
   const histData = [
-    { fecha: "2026-02-01", fat: 10.0, sat: 8.0,  total: 9.0  },
-    { fecha: "2026-02-15", fat: 25.0, sat: 20.0, total: 22.5 },
-    { fecha: "2026-03-01", fat: 45.0, sat: 38.0, total: 41.5 },
-    { fecha: "2026-03-15", fat: 60.0, sat: 55.0, total: 57.5 },
-    { fecha: "2026-04-01", fat: 72.0, sat: 68.0, total: 70.0 },
-    { fecha: "2026-04-15", fat: 82.0, sat: 78.0, total: 80.0 },
-    { fecha: "2026-05-01", fat: 88.0, sat: 91.0, total: 89.5 },
-    { fecha: "2026-05-10", fat: 90.2, sat: 94.0, total: 92.1 },
-    { fecha: "2026-05-19", fat: 90.2, sat: 94.0, total: 92.1 },
+    { fecha: "2026-02-01", fat: 10.0, sat: 8.0,  total: 9.0,  pem:  8.5,  pf:  8.7  },
+    { fecha: "2026-02-15", fat: 25.0, sat: 20.0, total: 22.5, pem: 22.0,  pf: 22.5  },
+    { fecha: "2026-03-01", fat: 45.0, sat: 38.0, total: 41.5, pem: 42.0,  pf: 43.0  },
+    { fecha: "2026-03-15", fat: 60.0, sat: 55.0, total: 57.5, pem: 65.0,  pf: 66.0  },
+    { fecha: "2026-04-01", fat: 72.0, sat: 68.0, total: 70.0, pem: 82.0,  pf: 83.0  },
+    { fecha: "2026-04-15", fat: 82.0, sat: 78.0, total: 80.0, pem: 93.0,  pf: 94.0  },
+    { fecha: "2026-05-01", fat: 88.0, sat: 91.0, total: 89.5, pem: 96.49, pf: 96.64 },
+    { fecha: "2026-05-10", fat: 90.2, sat: 94.0, total: 92.1, pem: 96.49, pf: 96.64 },
+    { fecha: "2026-05-19", fat: 90.2, sat: 94.0, total: 92.1, pem: 96.49, pf: 96.64 },
   ]
   for (const h of histData) {
     await db.historicoAvance.create({
       data: {
         proyectoId: proyecto.id,
         fecha: new Date(h.fecha),
-        porcentajeFat:          h.fat,
-        porcentajeManguerasFat: h.fat * 1.00,
-        porcentajeSenalesFat:   h.fat * 0.94,
-        porcentajePruebasFat:   h.fat * 0.96,
+        porcentajeFat:            h.fat,
+        porcentajeManguerasFat:   h.fat * 1.00,
+        porcentajeSenalesFat:     h.fat * 0.94,
+        porcentajePruebasFat:     h.fat * 0.96,
         porcentajeSat:            h.sat,
-        porcentajeManguerasSat:   h.sat * 1.00,
-        porcentajeManguerasPfSat: Math.min(h.sat * 1.002, 100),
+        porcentajeManguerasSat:   h.pem,
+        porcentajeManguerasPfSat: h.pf,
         porcentajeSenalesSat:     h.sat * 0.99,
         porcentajePruebasSat:     h.sat * 0.88,
         porcentajeTotal:          h.total,
