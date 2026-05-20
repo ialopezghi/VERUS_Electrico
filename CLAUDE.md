@@ -342,7 +342,9 @@ codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
 Usuarios: Iker Lasso (ADMIN), Andrés Palacios (OPERARIO), Ángel Fernández (OPERARIO), Alberto Arana (VISOR)
 
 Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
-- `12737` BEFESA ALEMANIA — H01;H02 (en_proceso, Bernburg Alemania) — con datos FAT
+- `12737` BEFESA ALEMANIA — H01;H02 FRB-40/KBV-40 (en_proceso, Bernburg Alemania) — con datos FAT
+- `12737` BEFESA ALEMANIA — H03;H04 FRB-40/KBV-40 (en_proceso, Bernburg Alemania) — FAT 83.3% + SAT 15.9%
+  (restaurado del soft-delete 14/05/2026)
 - `10517` BAUX — H01 (completado)
 - `11576` GLOBALCAST — (activo)
 - `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso) — SAT mangueras cargadas
@@ -354,7 +356,7 @@ Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
 - `12545` Speira Neuss — H01 RAN-2R (en_proceso, Neuss Alemania) — FAT 16.5% + SAT 65.3%
 - `12545` Speira Neuss — H02 MCH-H-12 (en_proceso, Neuss Alemania) — SAT 32.0%
 
-> BEFESA H03;H04 eliminado (soft delete 14/05/2026) — estaba vacío y duplicado.
+> BEFESA H03;H04 restaurado el 20/05/2026 con datos reales FAT+SAT (antes soft-deleted sin datos).
 
 ### Scripts de inserción
 Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
@@ -363,3 +365,4 @@ Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
 - `insert-nama.ts` — NAMA 12290-H01 (SAT señales+pruebas+mangueras)
 - `insert-neuss.ts` — Speira Neuss 12545 H01+H02 (H01: FAT+SAT, H02: SAT)
 - `insert-arzyz2.ts` — ARZYZ 12720 H03;H04 + H05 + H06 (FAT únicamente, SAT pendiente)
+- `insert-befesa2.ts` — BEFESA 12737 H03;H04 (restaurado + FAT 83.3% + SAT 15.9%)
