@@ -27,6 +27,7 @@ function resolverImagen(proyecto: { nombre: string | null; cliente: string | nul
   if (texto.includes("MCB"))                                                              return "/img-baux-mcb.png"
   if (texto.includes("BAUX") || texto.includes("HHVF"))                                  return "/img-baux.png"
   if (texto.includes("ARCELOR") || texto.includes("FNG"))                                return "/img-arcelor.png"
+  if (texto.includes("SPEIRA") || texto.includes("RAN-2R"))                              return "/img-ran2r.png"
   if (texto.includes("NAMA"))                                                             return "/img-ran.png"
   if (texto.includes("FD2") || texto.includes("CONSTELLIUM") || texto.includes("RAN-R")) return "/img-fd2.png"
   if (texto.includes("RAN-60"))                                                           return "/img-ran.png"

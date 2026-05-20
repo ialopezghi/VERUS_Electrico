@@ -242,6 +242,7 @@ Función en `ProyectoCard.tsx`. Mapeo por keywords en nombre/cliente/tipoEquipo:
 | MCB | `/img-baux-mcb.png` |
 | BAUX, HHVF | `/img-baux.png` |
 | ARCELOR, FNG | `/img-arcelor.png` |
+| SPEIRA, RAN-2R | `/img-ran2r.png` |
 | NAMA | `/img-ran.png` |
 | FD2, CONSTELLIUM, RAN-R | `/img-fd2.png` |
 | RAN-60 | `/img-ran.png` |
@@ -347,6 +348,8 @@ Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
 - `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso) — SAT mangueras cargadas
 - `12720` ARZYZ — H01 (en_proceso) — datos FAT+SAT completos (señales, pruebas, mangueras)
 - `12290` NAMA — H01 (en_proceso, Coahuila de Zaragoza México) — SAT: Mangueras 0%, Señales 96.8%, Pruebas 89.2% → Avance SAT 62%
+- `12545` Speira Neuss — H01 RAN-2R (en_proceso, Neuss Alemania) — FAT 16.5% + SAT 65.3%
+- `12545` Speira Neuss — H02 MCH-H-12 (en_proceso, Neuss Alemania) — SAT 32.0%
 
 > BEFESA H03;H04 eliminado (soft delete 14/05/2026) — estaba vacío y duplicado.
 
@@ -355,3 +358,4 @@ Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
 - `insert-amissa.ts` — AMISSA 11721 (H01-H05 mangueras SAT)
 - `insert-arzyz.ts` — ARZYZ 12720-H01 (FAT+SAT completos)
 - `insert-nama.ts` — NAMA 12290-H01 (SAT señales+pruebas+mangueras)
+- `insert-neuss.ts` — Speira Neuss 12545 H01+H02 (H01: FAT+SAT, H02: SAT)
