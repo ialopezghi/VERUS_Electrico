@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useEffect, useTransition } from "react"
 import Toggle from "@/components/ui/Toggle"
 import Modal from "@/components/ui/Modal"
 import { FormField, inputStyle } from "@/components/ui/FormField"
+import ColSelector, { ColDef } from "@/components/ui/ColSelector"
 
 interface Prueba {
   id: string; identificador: string; tipo: string | null; descripcion: string | null
@@ -12,11 +13,35 @@ interface Prueba {
 
 interface Props { proyectoId: string; fase: "FAT" | "SAT"; pruebas: Prueba[] }
 
-const TH = ({ children }: { children: React.ReactNode }) => (
-  <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap", background: "#F2F2F2" }}>
-    {children}
-  </th>
-)
+const COLS: ColDef[] = [
+  { key: "identificador", label: "Identificador", alwaysOn: true },
+  { key: "tipo",          label: "Tipo" },
+  { key: "descripcion",   label: "Descripción" },
+  { key: "valorTeorico",  label: "Valor teórico" },
+  { key: "valorReal",     label: "Valor real" },
+  { key: "comprobado",    label: "Comprobado",   alwaysOn: true },
+  { key: "comentarios",   label: "Comentarios" },
+]
+const DEFAULT_COLS: Record<string, boolean> = {
+  identificador: true, tipo: true, descripcion: true,
+  valorTeorico: true, valorReal: true, comprobado: true, comentarios: true,
+}
+
+function useLocalStorage<T>(key: string, def: T) {
+  const [val, setVal] = useState<T>(def)
+  useEffect(() => {
+    try { const s = localStorage.getItem(key); if (s) setVal(JSON.parse(s)) } catch {}
+  }, [key])
+  function set(v: T) { setVal(v); try { localStorage.setItem(key, JSON.stringify(v)) } catch {} }
+  return [val, set] as const
+}
+
+const TH = ({ children, visible = true }: { children: React.ReactNode; visible?: boolean }) =>
+  visible ? (
+    <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap", background: "#F2F2F2" }}>
+      {children}
+    </th>
+  ) : null
 
 const emptyForm = { identificador: "", tipo: "", descripcion: "", valorTeorico: "", valorReal: "", comentarios: "" }
 
@@ -26,6 +51,10 @@ export default function PruebasTable({ proyectoId, fase, pruebas: initial }: Pro
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, startSave] = useTransition()
+  const [cols, setCols] = useLocalStorage<Record<string, boolean>>("verus_pru_cols", DEFAULT_COLS)
+
+  function toggleCol(key: string, val: boolean) { setCols({ ...cols, [key]: val }) }
+  const v = (key: string) => cols[key] ?? DEFAULT_COLS[key] ?? true
 
   function updateComprobado(id: string, comprobado: boolean) {
     setData((prev) => prev.map((p) => (p.id === id ? { ...p, comprobado } : p)))
@@ -57,9 +86,15 @@ export default function PruebasTable({ proyectoId, fase, pruebas: initial }: Pro
   }
 
   const pct = data.length ? Math.round((data.filter((p) => p.comprobado).length / data.length) * 100) : 0
+  const colSpan = COLS.filter((c) => v(c.key)).length
 
   return (
     <>
+      {/* Toolbar */}
+      <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderBottom: "1px solid #F3F4F6", background: "#FAFAFA" }}>
+        <ColSelector cols={COLS} visible={cols} onChange={toggleCol} />
+      </div>
+
       <div style={{ overflowX: "auto" }}>
         {data.length > 0 && (
           <div style={{ padding: "10px 16px", background: "#F2F2F2", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 12 }}>
@@ -73,26 +108,33 @@ export default function PruebasTable({ proyectoId, fase, pruebas: initial }: Pro
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
-              <TH>Identificador</TH><TH>Tipo</TH><TH>Descripción</TH>
-              <TH>Valor teórico</TH><TH>Valor real</TH><TH>Comprobado</TH><TH>Comentarios</TH>
+              <TH visible={v("identificador")}>Identificador</TH>
+              <TH visible={v("tipo")}>Tipo</TH>
+              <TH visible={v("descripcion")}>Descripción</TH>
+              <TH visible={v("valorTeorico")}>Valor teórico</TH>
+              <TH visible={v("valorReal")}>Valor real</TH>
+              <TH visible={v("comprobado")}>Comprobado</TH>
+              <TH visible={v("comentarios")}>Comentarios</TH>
             </tr>
           </thead>
           <tbody>
             {data.map((p, i) => (
               <tr key={p.id} style={{ background: i % 2 === 0 ? "white" : "#FAFAFA", opacity: p.comprobado ? 0.7 : 1 }}>
-                <td style={{ padding: "10px 12px", fontWeight: 600, color: "#111827", borderBottom: "1px solid #F3F4F6" }}>{p.identificador}</td>
-                <td style={{ padding: "10px 12px", color: "#6B7280", fontSize: 12, borderBottom: "1px solid #F3F4F6" }}>{p.tipo ?? "—"}</td>
-                <td style={{ padding: "10px 12px", color: "#374151", borderBottom: "1px solid #F3F4F6", maxWidth: 220 }}>{p.descripcion ?? "—"}</td>
-                <td style={{ padding: "10px 12px", color: "#6B7280", borderBottom: "1px solid #F3F4F6", fontSize: 12 }}>{p.valorTeorico ?? "—"}</td>
-                <td style={{ padding: "10px 12px", color: p.valorReal ? "#111827" : "#D1D5DB", borderBottom: "1px solid #F3F4F6", fontSize: 12, fontWeight: p.valorReal ? 500 : 400 }}>{p.valorReal || "—"}</td>
-                <td style={{ padding: "10px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                  <Toggle checked={p.comprobado} onChange={(v) => updateComprobado(p.id, v)} />
-                </td>
-                <td style={{ padding: "10px 12px", color: "#6B7280", fontSize: 12, borderBottom: "1px solid #F3F4F6" }}>{p.comentarios ?? ""}</td>
+                {v("identificador") && <td style={{ padding: "10px 12px", fontWeight: 600, color: "#111827", borderBottom: "1px solid #F3F4F6" }}>{p.identificador}</td>}
+                {v("tipo") && <td style={{ padding: "10px 12px", color: "#6B7280", fontSize: 12, borderBottom: "1px solid #F3F4F6" }}>{p.tipo ?? "—"}</td>}
+                {v("descripcion") && <td style={{ padding: "10px 12px", color: "#374151", borderBottom: "1px solid #F3F4F6", maxWidth: 220 }}>{p.descripcion ?? "—"}</td>}
+                {v("valorTeorico") && <td style={{ padding: "10px 12px", color: "#6B7280", borderBottom: "1px solid #F3F4F6", fontSize: 12 }}>{p.valorTeorico ?? "—"}</td>}
+                {v("valorReal") && <td style={{ padding: "10px 12px", color: p.valorReal ? "#111827" : "#D1D5DB", borderBottom: "1px solid #F3F4F6", fontSize: 12, fontWeight: p.valorReal ? 500 : 400 }}>{p.valorReal || "—"}</td>}
+                {v("comprobado") && (
+                  <td style={{ padding: "10px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                    <Toggle checked={p.comprobado} onChange={(v) => updateComprobado(p.id, v)} />
+                  </td>
+                )}
+                {v("comentarios") && <td style={{ padding: "10px 12px", color: "#6B7280", fontSize: 12, borderBottom: "1px solid #F3F4F6" }}>{p.comentarios ?? ""}</td>}
               </tr>
             ))}
             {data.length === 0 && (
-              <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: "#9CA3AF" }}>No hay pruebas en fase {fase}</td></tr>
+              <tr><td colSpan={colSpan} style={{ padding: 40, textAlign: "center", color: "#9CA3AF" }}>No hay pruebas en fase {fase}</td></tr>
             )}
           </tbody>
         </table>

@@ -75,6 +75,22 @@ export function calcKpiFase(data: {
   }
 }
 
+export function calcSubKpisMangueras(mangueras: Array<{
+  tendidoEnOrigen: boolean | null
+  tendidoEnDestino: boolean | null
+  conectadoEnOrigen: boolean | null
+  conectadoEnDestino: boolean | null
+}>) {
+  const total = mangueras.length
+  if (!total) return { pctTendido: 0, pctConectado: 0 }
+  const okTendido  = mangueras.filter((m) => m.tendidoEnOrigen !== false && m.tendidoEnDestino !== false).length
+  const okConectado = mangueras.filter((m) => m.conectadoEnOrigen !== false && m.conectadoEnDestino !== false).length
+  return {
+    pctTendido:   (okTendido  / total) * 100,
+    pctConectado: (okConectado / total) * 100,
+  }
+}
+
 export function fmt(n: number): string {
   return n.toFixed(1)
 }

@@ -3,7 +3,7 @@ import { auth } from "../../../auth"
 import { redirect } from "next/navigation"
 import { codProyecto, calcKpiFase } from "@/lib/kpi"
 import KpiCard from "@/components/ui/KpiCard"
-import ProyectoCard from "@/components/proyectos/ProyectoCard"
+import ProyectosClient from "@/components/proyectos/ProyectosClient"
 
 export const dynamic = "force-dynamic"
 
@@ -72,20 +72,20 @@ export default async function ProyectosPage() {
         />
       </div>
 
-      {/* Proyectos grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 16 }}>
-        {proyectosConKpi.map((p) => (
-          <ProyectoCard key={p.id} proyecto={p} />
-        ))}
-      </div>
-
-      {proyectos.length === 0 && (
-        <div style={{ textAlign: "center", padding: 80, color: "var(--color-muted)" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-          <div style={{ fontSize: 16, fontWeight: 500 }}>No hay proyectos</div>
-          <div style={{ fontSize: 13, marginTop: 8 }}>Crea un proyecto en Gestión Proyectos</div>
-        </div>
-      )}
+      {/* Proyectos (tarjetas / tabla con selector de columnas) */}
+      <ProyectosClient proyectos={proyectosConKpi.map((p) => ({
+        id:         p.id,
+        orden:      p.orden,
+        codigo:     p.codigo,
+        nombre:     p.nombre,
+        cliente:    p.cliente,
+        ubicacion:  p.ubicacion,
+        tipoEquipo: p.tipoEquipo,
+        estado:     p.estado,
+        fat:        p.fat,
+        sat:        p.sat,
+        total:      p.total,
+      }))} />
     </div>
   )
 }

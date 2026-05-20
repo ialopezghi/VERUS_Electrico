@@ -211,10 +211,12 @@ model HistoricoAvance {
   proyectoId String   @map("proyecto_id") @db.Uuid
   fecha      DateTime @db.Timestamptz
 
-  porcentajeFat          Decimal @default(0) @map("porcentaje_fat")           @db.Decimal(5, 2)
-  porcentajePruebasFat   Decimal @default(0) @map("porcentaje_pruebas_fat")   @db.Decimal(5, 2)
-  porcentajeSenalesFat   Decimal @default(0) @map("porcentaje_senales_fat")   @db.Decimal(5, 2)
-  porcentajeManguerasFat Decimal @default(0) @map("porcentaje_mangueras_fat") @db.Decimal(5, 2)
+  porcentajeFat            Decimal @default(0) @map("porcentaje_fat")             @db.Decimal(5, 2)
+  porcentajePruebasFat     Decimal @default(0) @map("porcentaje_pruebas_fat")     @db.Decimal(5, 2)
+  porcentajeSenalesFat     Decimal @default(0) @map("porcentaje_senales_fat")     @db.Decimal(5, 2)
+  porcentajeManguerasFat   Decimal @default(0) @map("porcentaje_mangueras_fat")   @db.Decimal(5, 2)
+  porcentajeTendidoFat     Decimal @default(0) @map("porcentaje_tendido_fat")     @db.Decimal(5, 2)
+  porcentajeConectadoFat   Decimal @default(0) @map("porcentaje_conectado_fat")   @db.Decimal(5, 2)
 
   porcentajeSat            Decimal @default(0) @map("porcentaje_sat")              @db.Decimal(5, 2)
   porcentajePruebasSat     Decimal @default(0) @map("porcentaje_pruebas_sat")      @db.Decimal(5, 2)

@@ -24,11 +24,19 @@ interface Props {
 function resolverImagen(proyecto: { nombre: string | null; cliente: string | null; tipoEquipo: string | null; imagenUrl?: string | null }) {
   if (proyecto.imagenUrl) return proyecto.imagenUrl
   const texto = `${proyecto.nombre ?? ""} ${proyecto.cliente ?? ""} ${proyecto.tipoEquipo ?? ""}`.toUpperCase()
-  if (texto.includes("BAUX") || texto.includes("HHVF") || texto.includes("MCB"))         return "/img-baux.png"
+  if (texto.includes("MCB"))                                                              return "/img-baux-mcb.png"
+  if (texto.includes("BAUX") || texto.includes("HHVF"))                                  return "/img-baux.png"
   if (texto.includes("ARCELOR") || texto.includes("FNG"))                                return "/img-arcelor.png"
+  if (texto.includes("NAMA"))                                                             return "/img-ran.png"
   if (texto.includes("FD2") || texto.includes("CONSTELLIUM") || texto.includes("RAN-R")) return "/img-fd2.png"
-  if (texto.includes("ARZYZ") || texto.includes("RMA"))                                  return "/img-arzyz.png"
-  if (texto.includes("GLOBALCAST") || texto.includes("FRB") || texto.includes("KBV"))    return "/ghi-machine.png"
+  if (texto.includes("RAN-60"))                                                           return "/img-ran.png"
+  if (texto.includes("DESESCORIADORA"))                                                   return "/img-desescoriadora.png"
+  if (texto.includes("MCH"))                                                              return "/img-mch.png"
+  if (texto.includes("CONTINUO"))                                                         return "/img-continuo.png"
+  if (texto.includes("ARZYZ"))                                                            return "/img-arzyz.png"
+  if (texto.includes("RMA"))                                                              return "/img-rma.png"
+  if (texto.includes("FRB"))                                                              return "/img-frb.png"
+  if (texto.includes("GLOBALCAST") || texto.includes("KBV"))                             return "/ghi-machine.png"
   return "/ghi-machine.png"
 }
 

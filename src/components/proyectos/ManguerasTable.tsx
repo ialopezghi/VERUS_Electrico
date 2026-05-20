@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
+import { useState, useEffect, useTransition, useRef } from "react"
 import FlagCell from "@/components/ui/FlagCell"
 import Modal from "@/components/ui/Modal"
 import { FormField, inputStyle } from "@/components/ui/FormField"
+import ColSelector, { ColDef } from "@/components/ui/ColSelector"
 
 type FlagValue = boolean | null
 
@@ -16,11 +17,39 @@ interface Manguera {
 
 interface Props { proyectoId: string; fase: "FAT" | "SAT"; mangueras: Manguera[] }
 
-const TH = ({ children }: { children: React.ReactNode }) => (
-  <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap", background: "#F2F2F2" }}>
-    {children}
-  </th>
-)
+const COLS: ColDef[] = [
+  { key: "imei",           label: "IMEI",            alwaysOn: true },
+  { key: "origen",         label: "Origen" },
+  { key: "conectOrigen",   label: "Conect. origen" },
+  { key: "tendidoOrigen",  label: "Tendido origen" },
+  { key: "destino",        label: "Destino" },
+  { key: "tendidoDestino", label: "Tendido destino" },
+  { key: "conectDestino",  label: "Conect. destino" },
+  { key: "metros",         label: "Metros" },
+  { key: "descripcion",    label: "Descripción" },
+  { key: "comentarios",    label: "Comentarios" },
+]
+const DEFAULT_COLS: Record<string, boolean> = {
+  imei: true, origen: true, conectOrigen: true, tendidoOrigen: true,
+  destino: true, tendidoDestino: true, conectDestino: true,
+  metros: true, descripcion: true, comentarios: true,
+}
+
+function useLocalStorage<T>(key: string, def: T) {
+  const [val, setVal] = useState<T>(def)
+  useEffect(() => {
+    try { const s = localStorage.getItem(key); if (s) setVal(JSON.parse(s)) } catch {}
+  }, [key])
+  function set(v: T) { setVal(v); try { localStorage.setItem(key, JSON.stringify(v)) } catch {} }
+  return [val, set] as const
+}
+
+const TH = ({ children, visible = true }: { children: React.ReactNode; visible?: boolean }) =>
+  visible ? (
+    <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280", borderBottom: "1px solid #E5E7EB", whiteSpace: "nowrap", background: "#F2F2F2" }}>
+      {children}
+    </th>
+  ) : null
 
 function EditableCell({ value, field, onSave }: { value: string | null; field: string; onSave: (field: string, value: string) => void }) {
   const [editing, setEditing] = useState(false)
@@ -57,6 +86,10 @@ export default function ManguerasTable({ proyectoId, fase, mangueras: initial }:
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, startSave] = useTransition()
+  const [cols, setCols] = useLocalStorage<Record<string, boolean>>("verus_mang_cols", DEFAULT_COLS)
+
+  function toggleCol(key: string, val: boolean) { setCols({ ...cols, [key]: val }) }
+  const v = (key: string) => cols[key] ?? DEFAULT_COLS[key] ?? true
 
   function patch(id: string, body: Record<string, unknown>) {
     startTransition(async () => {
@@ -96,54 +129,88 @@ export default function ManguerasTable({ proyectoId, fase, mangueras: initial }:
     })
   }
 
+  const colSpan = COLS.filter((c) => v(c.key)).length
+
   return (
     <>
+      {/* Toolbar */}
+      <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderBottom: "1px solid #F3F4F6", background: "#FAFAFA" }}>
+        <ColSelector cols={COLS} visible={cols} onChange={toggleCol} />
+      </div>
+
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>
-              <TH>IMEI</TH><TH>Origen</TH><TH>Conect. origen</TH><TH>Tendido origen</TH>
-              <TH>Destino</TH><TH>Tendido destino</TH><TH>Conect. destino</TH>
-              <TH>Metros</TH><TH>Descripción</TH><TH>Comentarios</TH>
+              <TH visible={v("imei")}>IMEI</TH>
+              <TH visible={v("origen")}>Origen</TH>
+              <TH visible={v("conectOrigen")}>Conect. origen</TH>
+              <TH visible={v("tendidoOrigen")}>Tendido origen</TH>
+              <TH visible={v("destino")}>Destino</TH>
+              <TH visible={v("tendidoDestino")}>Tendido destino</TH>
+              <TH visible={v("conectDestino")}>Conect. destino</TH>
+              <TH visible={v("metros")}>Metros</TH>
+              <TH visible={v("descripcion")}>Descripción</TH>
+              <TH visible={v("comentarios")}>Comentarios</TH>
             </tr>
           </thead>
           <tbody>
             {data.map((m, i) => (
               <tr key={m.id} style={{ background: i % 2 === 0 ? "white" : "#FAFAFA", borderLeft: i === 0 ? "3px solid #C0022C" : "3px solid transparent" }}>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", whiteSpace: "nowrap", minWidth: 120 }}>
-                  <EditableCell value={m.imei} field="imei" onSave={(f, v) => updateText(m.id, f, v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 100 }}>
-                  <EditableCell value={m.origen} field="origen" onSave={(f, v) => updateText(m.id, f, v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                  <FlagCell value={m.conectadoEnOrigen} onChange={(v) => updateFlag(m.id, "conectadoEnOrigen", v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                  <FlagCell value={m.tendidoEnOrigen} onChange={(v) => updateFlag(m.id, "tendidoEnOrigen", v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 100 }}>
-                  <EditableCell value={m.destino} field="destino" onSave={(f, v) => updateText(m.id, f, v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                  <FlagCell value={m.tendidoEnDestino} onChange={(v) => updateFlag(m.id, "tendidoEnDestino", v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
-                  <FlagCell value={m.conectadoEnDestino} onChange={(v) => updateFlag(m.id, "conectadoEnDestino", v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 60 }}>
-                  <EditableCell value={m.metros != null ? String(m.metros) : null} field="metros" onSave={(f, v) => updateText(m.id, f, v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 140 }}>
-                  <EditableCell value={m.descripcion} field="descripcion" onSave={(f, v) => updateText(m.id, f, v)} />
-                </td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 140 }}>
-                  <EditableCell value={m.comentarios} field="comentarios" onSave={(f, v) => updateText(m.id, f, v)} />
-                </td>
+                {v("imei") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", whiteSpace: "nowrap", minWidth: 120 }}>
+                    <EditableCell value={m.imei} field="imei" onSave={(f, v) => updateText(m.id, f, v)} />
+                  </td>
+                )}
+                {v("origen") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 100 }}>
+                    <EditableCell value={m.origen} field="origen" onSave={(f, v) => updateText(m.id, f, v)} />
+                  </td>
+                )}
+                {v("conectOrigen") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                    <FlagCell value={m.conectadoEnOrigen} onChange={(v) => updateFlag(m.id, "conectadoEnOrigen", v)} />
+                  </td>
+                )}
+                {v("tendidoOrigen") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                    <FlagCell value={m.tendidoEnOrigen} onChange={(v) => updateFlag(m.id, "tendidoEnOrigen", v)} />
+                  </td>
+                )}
+                {v("destino") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 100 }}>
+                    <EditableCell value={m.destino} field="destino" onSave={(f, v) => updateText(m.id, f, v)} />
+                  </td>
+                )}
+                {v("tendidoDestino") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                    <FlagCell value={m.tendidoEnDestino} onChange={(v) => updateFlag(m.id, "tendidoEnDestino", v)} />
+                  </td>
+                )}
+                {v("conectDestino") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6" }}>
+                    <FlagCell value={m.conectadoEnDestino} onChange={(v) => updateFlag(m.id, "conectadoEnDestino", v)} />
+                  </td>
+                )}
+                {v("metros") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 60 }}>
+                    <EditableCell value={m.metros != null ? String(m.metros) : null} field="metros" onSave={(f, v) => updateText(m.id, f, v)} />
+                  </td>
+                )}
+                {v("descripcion") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 140 }}>
+                    <EditableCell value={m.descripcion} field="descripcion" onSave={(f, v) => updateText(m.id, f, v)} />
+                  </td>
+                )}
+                {v("comentarios") && (
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #F3F4F6", minWidth: 140 }}>
+                    <EditableCell value={m.comentarios} field="comentarios" onSave={(f, v) => updateText(m.id, f, v)} />
+                  </td>
+                )}
               </tr>
             ))}
             {data.length === 0 && (
-              <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: "#9CA3AF" }}>No hay mangueras en fase {fase}</td></tr>
+              <tr><td colSpan={colSpan} style={{ padding: 40, textAlign: "center", color: "#9CA3AF" }}>No hay mangueras en fase {fase}</td></tr>
             )}
           </tbody>
         </table>

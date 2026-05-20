@@ -239,10 +239,19 @@ Función en `ProyectoCard.tsx`. Mapeo por keywords en nombre/cliente/tipoEquipo:
 
 | Keywords | Imagen |
 |---|---|
-| BAUX, HHVF, MCB | `/img-baux.png` |
+| MCB | `/img-baux-mcb.png` |
+| BAUX, HHVF | `/img-baux.png` |
 | ARCELOR, FNG | `/img-arcelor.png` |
+| NAMA | `/img-ran.png` |
 | FD2, CONSTELLIUM, RAN-R | `/img-fd2.png` |
-| GLOBALCAST, FRB, KBV | `/ghi-machine.png` |
+| RAN-60 | `/img-ran.png` |
+| DESESCORIADORA | `/img-desescoriadora.png` |
+| MCH | `/img-mch.png` |
+| CONTINUO | `/img-continuo.png` |
+| ARZYZ | `/img-arzyz.png` |
+| RMA | `/img-rma.png` |
+| FRB | `/img-frb.png` |
+| GLOBALCAST, KBV | `/ghi-machine.png` |
 | resto | `/ghi-machine.png` |
 
 Para añadir tipo nuevo: copiar imagen a `/public/img-xxx.png` + línea en `resolverImagen()`.
@@ -331,9 +340,18 @@ codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
 
 Usuarios: Iker Lasso (ADMIN), Andrés Palacios (OPERARIO), Ángel Fernández (OPERARIO), Alberto Arana (VISOR)
 
-Proyectos activos:
+Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
 - `12737` BEFESA ALEMANIA — H01;H02 (en_proceso, Bernburg Alemania) — con datos FAT
 - `10517` BAUX — H01 (completado)
 - `11576` GLOBALCAST — (activo)
+- `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso) — SAT mangueras cargadas
+- `12720` ARZYZ — H01 (en_proceso) — datos FAT+SAT completos (señales, pruebas, mangueras)
+- `12290` NAMA — H01 (en_proceso, Coahuila de Zaragoza México) — SAT: Mangueras 0%, Señales 96.8%, Pruebas 89.2% → Avance SAT 62%
 
 > BEFESA H03;H04 eliminado (soft delete 14/05/2026) — estaba vacío y duplicado.
+
+### Scripts de inserción
+Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
+- `insert-amissa.ts` — AMISSA 11721 (H01-H05 mangueras SAT)
+- `insert-arzyz.ts` — ARZYZ 12720-H01 (FAT+SAT completos)
+- `insert-nama.ts` — NAMA 12290-H01 (SAT señales+pruebas+mangueras)

@@ -8,63 +8,78 @@ interface FlagCellProps {
   disabled?: boolean
 }
 
-const OPTIONS: { label: string; value: FlagValue; bg: string; text: string }[] = [
-  { label: "SI",  value: true,  bg: "var(--color-si-bg)",  text: "var(--color-si-text)"  },
-  { label: "NO",  value: false, bg: "var(--color-no-bg)",  text: "var(--color-no-text)"  },
-  { label: "N/A", value: null,  bg: "var(--color-na-bg)",  text: "var(--color-na-text)"  },
-]
+const CYCLE: FlagValue[] = [true, false, null]
 
-function currentOption(v: FlagValue) {
-  return OPTIONS.find((o) => o.value === v) ?? OPTIONS[0]
+const STATES = {
+  true: {
+    label: "SI",
+    bg: "#DCFCE7",
+    color: "#15803D",
+    icon: (
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    ),
+  },
+  false: {
+    label: "NO",
+    bg: "#FEE2E2",
+    color: "#B91C1C",
+    icon: (
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    ),
+  },
+  null: {
+    label: "N/A",
+    bg: "#F3F4F6",
+    color: "#9CA3AF",
+    icon: (
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    ),
+  },
 }
 
 export default function FlagCell({ value, onChange, disabled = false }: FlagCellProps) {
-  const curr = currentOption(value)
+  const key = value === null ? "null" : String(value) as "true" | "false"
+  const state = STATES[key]
 
-  function next(e: React.ChangeEvent<HTMLSelectElement>) {
-    const raw = e.target.value
-    const selected = OPTIONS.find((o) => String(o.value) === raw)
-    if (selected) onChange(selected.value)
+  function cycle() {
+    if (disabled) return
+    const idx = CYCLE.indexOf(value)
+    onChange(CYCLE[(idx + 1) % CYCLE.length])
   }
 
   return (
-    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", minWidth: 72 }}>
-      <select
-        disabled={disabled}
-        value={String(value)}
-        onChange={next}
-        style={{
-          appearance: "none",
-          WebkitAppearance: "none",
-          background: curr.bg,
-          color: curr.text,
-          fontWeight: 600,
-          fontSize: 12,
-          padding: "4px 24px 4px 10px",
-          borderRadius: 2,
-          border: "none",
-          cursor: disabled ? "default" : "pointer",
-          width: "100%",
-        }}
-      >
-        {OPTIONS.map((o) => (
-          <option key={String(o.value)} value={String(o.value)}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <span
-        style={{
-          position: "absolute",
-          right: 6,
-          pointerEvents: "none",
-          color: curr.text,
-        }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </span>
-    </div>
+    <button
+      onClick={cycle}
+      disabled={disabled}
+      title={`${state.label} — clic para cambiar`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "4px 10px",
+        borderRadius: 2,
+        border: "none",
+        background: state.bg,
+        color: state.color,
+        fontWeight: 700,
+        fontSize: 11,
+        cursor: disabled ? "default" : "pointer",
+        letterSpacing: "0.04em",
+        transition: "opacity 0.1s",
+        whiteSpace: "nowrap",
+        userSelect: "none",
+      }}
+      onMouseEnter={(e) => { if (!disabled) (e.currentTarget as HTMLElement).style.opacity = "0.75" }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1" }}
+    >
+      {state.icon}
+      {state.label}
+    </button>
   )
 }
