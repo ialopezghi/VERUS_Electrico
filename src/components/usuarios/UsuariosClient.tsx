@@ -1,5 +1,5 @@
 "use client"
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo } from "react"
 import Modal from "@/components/ui/Modal"
 import { inputStyle } from "@/components/ui/FormField"
 import { codProyecto } from "@/lib/kpi"
@@ -43,7 +43,7 @@ interface ProyectoOpt {
   id: string; orden: number; idh: string; nombre: string | null
 }
 
-// ── Multi-select de proyectos ──────────────────────────────────────────────────
+// ── Multi-select de proyectos (inline, sin position:absolute) ─────────────────
 function ProyectoPicker({
   todos,
   selected,
@@ -55,107 +55,93 @@ function ProyectoPicker({
 }) {
   const [open, setOpen] = useState(false)
   const [buscar, setBuscar] = useState("")
-  const ref = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", handle)
-    return () => document.removeEventListener("mousedown", handle)
-  }, [])
+  const selectedProyectos = todos.filter(p => selected.includes(p.id))
 
   const disponibles = useMemo(() => {
     const q = buscar.toLowerCase()
     return todos.filter(p => {
-      const cod = codProyecto(p.orden, p.idh)
-      const nom = p.nombre ?? ""
-      return (cod.toLowerCase().includes(q) || nom.toLowerCase().includes(q))
+      if (selected.includes(p.id)) return false
+      const cod = codProyecto(p.orden, p.idh).toLowerCase()
+      const nom = (p.nombre ?? "").toLowerCase()
+      return !q || cod.includes(q) || nom.includes(q)
     })
-  }, [todos, buscar])
-
-  const selectedProyectos = todos.filter(p => selected.includes(p.id))
-  const unselected = disponibles.filter(p => !selected.includes(p.id))
+  }, [todos, selected, buscar])
 
   function add(id: string) { onChange([...selected, id]); setBuscar("") }
   function remove(id: string) { onChange(selected.filter(x => x !== id)) }
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      {/* Tags + toggle */}
+    <div style={{ border: "1px solid #E0E0E0", borderRadius: 2, background: "#fff", overflow: "hidden" }}>
+      {/* Tags row + toggle */}
       <div
         onClick={() => setOpen(o => !o)}
         style={{
-          minHeight: 38, border: "1px solid #E0E0E0", borderRadius: 2, padding: "4px 8px",
-          cursor: "pointer", background: "#fff", display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center",
+          minHeight: 38, padding: "5px 8px", cursor: "pointer",
+          display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center",
+          background: open ? "#FAFAFA" : "#fff",
         }}
       >
         {selectedProyectos.map(p => (
           <span key={p.id} style={{
-            display: "inline-flex", alignItems: "center", gap: 4,
-            background: "#F2F2F2", borderRadius: 2, padding: "2px 6px", fontSize: 11, color: "#333",
+            display: "inline-flex", alignItems: "center", gap: 3,
+            background: "#EEF0F3", border: "1px solid #D8DBE0", borderRadius: 2,
+            padding: "2px 6px", fontSize: 11, color: "#333333", fontWeight: 600,
           }}>
             {codProyecto(p.orden, p.idh)}
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); remove(p.id) }}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, color: "#959595", fontSize: 13 }}>
+            <button type="button" onClick={e => { e.stopPropagation(); remove(p.id) }}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, color: "#888", fontSize: 14, marginLeft: 1 }}>
               ×
             </button>
           </span>
         ))}
         {selectedProyectos.length === 0 && (
-          <span style={{ color: "#959595", fontSize: 12 }}>Sin asignaciones</span>
+          <span style={{ color: "#aaa", fontSize: 12 }}>Sin asignaciones</span>
         )}
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#959595" strokeWidth="2"
-          style={{ marginLeft: "auto", flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#959595" strokeWidth="2.5"
+          style={{ marginLeft: "auto", flexShrink: 0, transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "none" }}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
 
-      {/* Dropdown */}
+      {/* Inline dropdown */}
       {open && (
-        <div style={{
-          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
-          background: "#fff", border: "1px solid #E0E0E0", borderRadius: 2,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.12)", maxHeight: 280, overflow: "hidden",
-          display: "flex", flexDirection: "column",
-        }}>
-          <div style={{ padding: "6px 8px", borderBottom: "1px dashed #E0E0E0" }}>
+        <>
+          {/* Search */}
+          <div style={{ borderTop: "1px dashed #E0E0E0", padding: "6px 10px", background: "#FAFAFA" }}>
             <input
               autoFocus
               type="text"
               placeholder="Buscar elementos"
               value={buscar}
               onChange={e => setBuscar(e.target.value)}
-              onClick={e => e.stopPropagation()}
               style={{ width: "100%", border: "none", outline: "none", fontSize: 12, color: "#333", background: "transparent", boxSizing: "border-box" }}
             />
           </div>
-          <div style={{ overflowY: "auto", flex: 1 }}>
-            {unselected.length === 0 && (
-              <div style={{ padding: "12px 12px", color: "#959595", fontSize: 12 }}>
+          {/* List */}
+          <div style={{ borderTop: "1px solid #EFEFEF", maxHeight: 220, overflowY: "auto" }}>
+            {disponibles.length === 0 ? (
+              <div style={{ padding: "10px 12px", color: "#959595", fontSize: 12 }}>
                 {buscar ? "Sin resultados" : "Todos los proyectos ya asignados"}
               </div>
-            )}
-            {unselected.map(p => (
+            ) : disponibles.map(p => (
               <div
                 key={p.id}
                 onClick={() => add(p.id)}
-                style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #F9F9F9" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#F9F9F9")}
+                style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #F5F5F5" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#F5F8FF")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#C0022C" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#C0022C", letterSpacing: "0.02em" }}>
                   {codProyecto(p.orden, p.idh)}
                 </div>
                 {p.nombre && (
-                  <div style={{ fontSize: 11, color: "#959595", marginTop: 1 }}>{p.nombre}</div>
+                  <div style={{ fontSize: 11, color: "#777", marginTop: 1 }}>{p.nombre}</div>
                 )}
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
     </div>
   )
