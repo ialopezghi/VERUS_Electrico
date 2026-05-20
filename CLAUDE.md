@@ -347,7 +347,8 @@ Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
   (restaurado del soft-delete 14/05/2026)
 - `10517` BAUX — H01 (completado)
 - `11576` GLOBALCAST — (activo)
-- `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso) — SAT mangueras cargadas
+- `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso, Ramos Arizpe México) — SAT mangueras cargadas
+- `14336` AMISSA — H01 RMA-R-30-B (en_proceso, TURQUISA) — FAT 23.2% (Mang 39%, Sen 23.4%, Pru 7.3%)
 - `12720` ARZYZ — H01 RMA-R-30-B (en_proceso, Monterrey México) — FAT+SAT completos con señales/pruebas reales
 - `12720` ARZYZ — H03;H04 FRB-65 y KBV65 (en_proceso) — FAT 88.5% (Mang 83.2%, Sen 91.7%, Pru 90.5%)
 - `12720` ARZYZ — H05 RMA-R-50-B (en_proceso) — FAT 88.5% (Mang 83.1%, Sen 95%, Pru 87.5%)
@@ -366,3 +367,4 @@ Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
 - `insert-neuss.ts` — Speira Neuss 12545 H01+H02 (H01: FAT+SAT, H02: SAT)
 - `insert-arzyz2.ts` — ARZYZ 12720 H03;H04 + H05 + H06 (FAT únicamente, SAT pendiente)
 - `insert-befesa2.ts` — BEFESA 12737 H03;H04 (restaurado + FAT 83.3% + SAT 15.9%)
+- `insert-amissa2.ts` — AMISSA 14336-H01 RMA-R-30-B TURQUISA (FAT 23.2%)
