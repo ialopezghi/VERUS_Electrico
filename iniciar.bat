@@ -21,6 +21,9 @@ echo.
 echo  Instalando dependencias...
 call npm install
 echo.
+echo  Generando cliente Prisma...
+call npx prisma generate
+echo.
 echo  Arrancando servidor...
 timeout /t 3 /nobreak >nul
 start "" "http://localhost:3000"
