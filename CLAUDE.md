@@ -35,7 +35,7 @@ git push
 
 ## Deploy — Vercel
 
-**Estado**: ✅ Live en `https://verus-electrico.vercel.app` (19/05/2026)
+**Estado**: ✅ Live en `https://verus-electrico.vercel.app`
 
 Variables de entorno configuradas en Vercel:
 - `DATABASE_URL` → URL de Neon PostgreSQL
@@ -56,14 +56,13 @@ Variables de entorno configuradas en Vercel:
 3. `eslint` config en next.config.mjs no soportado en Next.js 16 → eliminado
 4. `NEXTAUTH_URL` con espacio doble → corregido en variables Vercel
 5. `useSearchParams()` sin Suspense → `LoginForm` envuelta en `<Suspense>` en login/page.tsx
-6. `domain_hint: "ghifurnaces.com"` en auth.ts → redirigía al SSO corporativo de GHI que bloqueaba la app nueva → eliminado
-
-**Último commit desplegado**: `ae59129` — Remove domain_hint from MicrosoftEntraID provider
+6. `domain_hint: "ghifurnaces.com"` en auth.ts → redirigía al SSO corporativo de GHI → eliminado
+7. Turbopack parse error en GestionClient `if...else` sin llaves → añadir `{ }` siempre
 
 **⚠️ Pendiente — OAuthCallbackError en login Microsoft:**
 - Login con cuenta @ghifurnaces.com da `OAuthCallbackError` en producción
 - APLAZADO — por ahora usar solo "Acceso de desarrollo" (dev bypass)
-- Posible fix: añadir `AUTH_URL=https://verus-electrico.vercel.app` a Vercel env vars (Auth.js v5 usa AUTH_URL, no NEXTAUTH_URL)
+- Posible fix: añadir `AUTH_URL=https://verus-electrico.vercel.app` a Vercel env vars
 
 ---
 
@@ -112,7 +111,7 @@ npm run build         # build producción (prisma generate + next build)
 
 | Modelo | Tabla DB | Descripción |
 |--------|----------|-------------|
-| `Proyecto` | `proyecto` | `idh` = identificador horno (ej: "H01;H02"), `orden` = nº pedido GHI |
+| `Proyecto` | `proyecto` | `idh` = identificador horno (ej: "H01;H02"), `orden` = nº pedido GHI, `faseActual: FaseMontaje?` |
 | `Manguera` | `manguera` | Flags SI/NO/N/A como `Boolean?` (null=N/A, true=SI, false=NO) |
 | `SignalRecord` | `signal_record` | `signalName` (no `nombre`), `checkedStatus` (no `comprobado`) |
 | `ProtocoloPrueba` | `protocolo_prueba` | `comprobado: Boolean` |
@@ -124,7 +123,7 @@ npm run build         # build producción (prisma generate + next build)
 ### Enums
 - `FaseMontaje`: `FAT | SAT`
 - `EstadoProyecto`: `ofertado | en_proceso | activo | completado | pausado | cancelado`
-- `RolUsuario`: `ADMIN | JEFE_OBRA | OPERARIO | VISOR`
+- `RolUsuario`: `ADMIN | JEFE_OBRA | OPERARIO | VISOR | SUPERVISOR`
 
 ### Convenciones schema
 - Soft delete: `deletedAt DateTime?`
@@ -144,7 +143,21 @@ verus-electrico/
 ├── package.json                     # build: "prisma generate && next build"
 ├── prisma/
 │   ├── schema.prisma
-│   └── seed.ts                      # Datos de prueba: BEFESA, BAUX, GLOBALCAST
+│   ├── seed.ts                      # Datos de prueba iniciales
+│   ├── insert-users.ts              # 46 usuarios con asignaciones (npx tsx prisma/insert-users.ts)
+│   ├── insert-amissa.ts             # AMISSA 11721
+│   ├── insert-amissa2.ts            # AMISSA 14336
+│   ├── insert-arzyz.ts              # ARZYZ 12720-H01
+│   ├── insert-arzyz2.ts             # ARZYZ 12720 H03-H06
+│   ├── insert-befesa2.ts            # BEFESA 12737 H03;H04
+│   ├── insert-nama.ts               # NAMA 12290
+│   ├── insert-neuss.ts              # Speira Neuss 12545
+│   ├── insert-completados.ts        # BAUX+ArcelorMittal+FD2 completados
+│   ├── insert-audubon.ts            # Audubon
+│   ├── insert-jupiter.ts            # Jupiter 11202
+│   ├── insert-holmestrand.ts        # Holmestrand 11576
+│   ├── insert-globalcast-rma.ts     # Globalcast RMA 11559-H03
+│   └── insert-globalcast-h0102.ts   # Globalcast FRB/KBV 11559-H01;H02
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx               # Root layout — SIN Google Fonts (Gotham es local)
@@ -152,10 +165,10 @@ verus-electrico/
 │   │   ├── (auth)/login/page.tsx    # LoginForm + export default con <Suspense>
 │   │   ├── proyectos/
 │   │   │   ├── layout.tsx           # Wraps AppShell — NO añadir AppShell en páginas hijas
-│   │   │   ├── page.tsx             # Dashboard KPIs + grid tarjetas
+│   │   │   ├── page.tsx             # Dashboard KPIs + ProyectosClient
 │   │   │   └── [id]/page.tsx        # Detalle proyecto (server component)
 │   │   ├── gestion/page.tsx         # → GestionClient
-│   │   ├── usuarios/page.tsx        # Lista usuarios (solo lectura)
+│   │   ├── usuarios/page.tsx        # Fetch usuarios+proyectos → UsuariosClient
 │   │   └── api/
 │   │       ├── auth/[...nextauth]/route.ts
 │   │       ├── proyectos/
@@ -167,25 +180,31 @@ verus-electrico/
 │   │       │       ├── pruebas/route.ts + [pid]/route.ts
 │   │       │       ├── canalizaciones/route.ts
 │   │       │       └── avance/route.ts
-│   │       └── usuarios/route.ts + [uid]/route.ts
+│   │       └── usuarios/
+│   │           ├── route.ts         # GET lista usuarios
+│   │           └── [uid]/route.ts   # GET/PATCH usuario + sync asignaciones[]
 │   ├── components/
 │   │   ├── layout/
 │   │   │   ├── AppShell.tsx         # SessionProvider + flex layout, fondo #F2F2F2
 │   │   │   └── Sidebar.tsx          # Logo GHI SVG + icono VERUS, nav borde rojo activo
 │   │   ├── proyectos/
+│   │   │   ├── ProyectosClient.tsx  # Vista tarjetas/tabla, filtros estado, dropdown orden
 │   │   │   ├── ProyectoCard.tsx     # Layout imagen+KPIs, resolverImagen() por keywords
 │   │   │   ├── ProyectoDetailClient.tsx  # Tabs FAT/SAT/AVANCE estilo GHI oscuro
 │   │   │   ├── ManguerasTable.tsx
 │   │   │   ├── SenalesTable.tsx
 │   │   │   ├── PruebasTable.tsx
 │   │   │   ├── CanalizacionesTable.tsx
-│   │   │   └── AvanceChart.tsx
+│   │   │   └── AvanceChart.tsx      # Sub-tabs FAT/SAT/TOTAL, tabla+gráfico stepAfter
 │   │   ├── gestion/
-│   │   │   └── GestionClient.tsx
+│   │   │   └── GestionClient.tsx    # Lista inline de proyectos, edición fase/estado/fechas
+│   │   ├── usuarios/
+│   │   │   └── UsuariosClient.tsx   # Tabla usuarios, toggle activo, modal asignaciones
 │   │   └── ui/
-│   │       ├── Modal.tsx            # Cabecera #333333 + línea roja
+│   │       ├── Modal.tsx            # Requiere prop open={boolean} — sin él no renderiza
 │   │       ├── FormField.tsx        # Label uppercase + inputStyle/selectStyle GHI
 │   │       ├── FlagCell.tsx         # SI/NO/N/A → Boolean?
+│   │       ├── ColSelector.tsx      # Selector de columnas visibles (tabla proyectos)
 │   │       ├── Toggle.tsx
 │   │       ├── KpiCard.tsx
 │   │       └── ProgressBar.tsx      # #C0022C por defecto, radius 2px
@@ -194,10 +213,18 @@ verus-electrico/
 │       └── kpi.ts                   # isMangueraOk, calcKpiFase, codProyecto, fmt
 └── public/
     ├── logo-ghi-full.svg
-    ├── ghi-machine.png              # BEFESA, GLOBALCAST FRB/KBV
-    ├── img-baux.png                 # Horno vertical BAUX
+    ├── ghi-machine.png              # BEFESA, GLOBALCAST FRB/KBV, genérico
+    ├── img-baux.png                 # Horno vertical BAUX HHVF
+    ├── img-baux-mcb.png             # BAUX MCB
     ├── img-arcelor.png              # ArcelorMittal FNG
-    ├── img-fd2.png                  # FD2 CONSTELLIUM
+    ├── img-fd2.png                  # FD2 CONSTELLIUM RAN-R
+    ├── img-ran.png                  # RAN-60, NAMA
+    ├── img-frb.png                  # FRB genérico
+    ├── img-rma.png                  # RMA
+    ├── img-mch.png                  # MCH
+    ├── img-continuo.png             # Horno continuo
+    ├── img-desescoriadora.png       # Desescoriadora
+    ├── img-arzyz.png                # ARZYZ
     ├── fonts/
     │   ├── Gotham-Book.ttf
     │   ├── Gotham-Medium.ttf
@@ -275,6 +302,17 @@ codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
 - % Pruebas: comprobado === true
 - % Fase: promedio de módulos con datos (ignora vacíos)
 
+### AvanceChart — series por pestaña
+| Pestaña | Series (nombre exacto) | Colores |
+|---|---|---|
+| FAT | AvanceFAT, ManguerasFAT, SeñalesFAT, PruebasFAT | #3B82F6, #1E3A8A, #EA580C, #7C3AED |
+| SAT | AvanceSAT, ManguerasPEM, ManguerasPF, SeñalesSAT, PruebasSAT | #3B82F6, #1E3A8A, #EA580C, #7C3AED, #DB2777 |
+| TOTAL | AvanceFAT, AvanceSAT, AvanceTOTAL | #3B82F6, #1E3A8A, #EA580C |
+
+### PATCH /api/usuarios/[uid]
+Acepta: `nombre`, `puesto`, `rol`, `activo`, `numeroEmpleado`, `asignaciones: string[]`  
+Si se pasa `asignaciones`, hace deleteMany + createMany (reemplaza todas las asignaciones del usuario).
+
 ---
 
 ## ⚠️ Errores conocidos y soluciones
@@ -292,38 +330,38 @@ codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
 | Prisma client en Vercel | Cache de deps | `"build": "prisma generate && next build"` |
 | `useSearchParams()` sin Suspense | Next.js 16 producción | Envolver en `<Suspense>` en login/page.tsx |
 | `git add src/app/(auth)/...` falla | PowerShell interpreta `(auth)` | Usar `git add -A` siempre |
-| `OAuthCallbackError` login Microsoft | Causa exacta pendiente de investigar | APLAZADO — usar dev bypass mientras; posible fix: añadir `AUTH_URL=https://verus-electrico.vercel.app` en Vercel |
-| Turbopack `path length exceeds max` | Proyecto en OneDrive con ruta ~130 chars | `mklink /J C:\verus "C:\ruta\larga"` y abrir desde `C:\verus` |
+| `OAuthCallbackError` login Microsoft | Causa pendiente | APLAZADO — dev bypass; posible fix: `AUTH_URL=https://verus-electrico.vercel.app` |
+| Turbopack `path length exceeds max` | OneDrive ruta ~130 chars | `mklink /J C:\verus "C:\ruta\larga"` |
+| Turbopack parse error `if...else` | Turbopack requiere llaves siempre | `if (x) { ... } else { ... }` con `{}` obligatorio |
+| Modal no renderiza | Falta prop `open={true}` | `<Modal open={true} ...>` — sin `open` devuelve null |
+| `Invalid value for argument rol: SUPERVISOR` | Prisma client compilado sin SUPERVISOR | Usar `$executeRaw` en scripts de seed; en API funciona porque el JS fue regenerado por `prisma db push` |
+| `EPERM rename query_engine-windows.dll` | Dev server bloquea el DLL | Parar dev server antes de `prisma generate` |
 
 ---
 
-## Estado del proyecto (Mayo 2026)
+## Estado del proyecto (20/05/2026)
 
 ### Completado ✅
 - Autenticación (Microsoft Entra ID + dev bypass)
-- Dashboard proyectos con KPIs FAT/SAT/Total
+- Dashboard proyectos con KPIs FAT/SAT/Total — vista tarjetas y tabla
+- Filtros por estado (Todos/Finalizado/En proceso/Activo) + dropdown por cliente
 - Detalle proyecto: tabs FAT/SAT/AVANCE estilo GHI
 - Tablas edición inline: mangueras, señales, pruebas, canalizaciones
-- Gestión proyectos: crear y editar
-- Página usuarios (solo lectura)
-- Gráfico histórico de avance (Recharts)
+- Gestión proyectos: lista inline editable (fase, estado, fechas, pausar)
+- Página usuarios: búsqueda, toggle activo inline, modal asignaciones proyectos + edición
+- Gráfico histórico de avance — sub-tabs FAT/SAT/TOTAL, series con nombres PowerApps
 - Diseño GHI Smart Furnaces: Gotham, #C0022C, #333333, radios 2-4px
-- Imágenes de máquinas por tipo (BAUX, ArcelorMittal, FD2, BEFESA/Globalcast)
-- Logo GHI real en sidebar y login
-- ProyectoCard con layout imagen + KPIs (igual que PowerApps)
-- Repositorio GitHub: https://github.com/ialopezghi/VERUS_Electrico
-- Deploy en Vercel configurado (pending confirmación último build)
+- Imágenes de máquinas por tipo (13 tipos cubiertos)
+- 46 usuarios cargados con roles y asignaciones a proyectos
+- 25 proyectos activos en BD coincidiendo con PowerApps
 
-### Pendiente ❌
-- **Confirmar que Vercel build pasa** (último fix: Suspense en login, commit 847f81a)
-- **Migración de datos reales** desde PowerApps/Dataverse
-  - Imanolia tiene pendiente exportar — posiblemente via Excel/CSV
-- Imagen para Globalcast RMA-30 (falta archivo)
-- Página usuarios: editar rol / activar-desactivar
-- Gestión asignaciones usuario↔proyecto desde UI
-- Deploy Azure Container Apps (Bicep + GitHub Actions) — objetivo final
-- App Registration Microsoft Entra ID (tenant: aa0adef3-bffb-4b93-86ef-c77158ee71e5)
-- Exportar datos a Excel desde las tablas
+### Pendiente / Próximas mejoras ❌
+1. **Vista personalizada por usuario** — operarios ven solo sus proyectos asignados (filtrar por session userId si rol OPERARIO/VISOR)
+2. **Diseño responsive móvil/tablet** — técnicos en campo
+3. **Exportar a Excel** — botón por tabla (mangueras/señales/pruebas), librería `xlsx`
+4. **Login Microsoft en producción** — OAuthCallbackError pendiente de resolver
+5. **Deploy Azure Container Apps** — objetivo final (Bicep + GitHub Actions)
+6. **Migración datos reales** desde PowerApps/Dataverse (pendiente exportación por Imanolia)
 
 ---
 
@@ -332,39 +370,59 @@ codProyecto(orden, idh) → `${orden}-${idh.replace(/;/g, " y ")}`
 - **Tenant ID**: `aa0adef3-bffb-4b93-86ef-c77158ee71e5`
 - **Dominio**: `@ghifurnaces.com`
 - **PowerApps**: datos en Dataverse, prefijo tablas `crac0_`
-- **Cuenta admin PowerApps**: Iker Lasso (`ilopez@ghifurnaces.com`)
+- **Cuenta admin PowerApps**: Iker Lasso (`ilasso@ghifurnaces.com`)
 - **Cuenta desarrolladora**: Imanolia Lopez (`imanolia1@ghifurnaces.com`)
 
 ---
 
-## Datos en BD (seed + modificaciones)
+## Datos en BD
 
-Usuarios: Iker Lasso (ADMIN), Andrés Palacios (OPERARIO), Ángel Fernández (OPERARIO), Alberto Arana (VISOR)
+### Usuarios (46 total) — `insert-users.ts`
+Roles: ADMIN (Iker Lasso, Alejandro Varela, Ander Galidez, Jon Rioja, Raul Villasante, Unai Pazos, Ignacio Zabala), SUPERVISOR (David Ballen, David Gomez, Eider Gonzalez, Iker Camin, Saul Benito, Wilson Delgado), VISOR (Alberto Arana, Arkaitz Astoreca, Cristina Rementeria), resto OPERARIO.
 
-Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
-- `12737` BEFESA ALEMANIA — H01;H02 FRB-40/KBV-40 (en_proceso, Bernburg Alemania) — con datos FAT
-- `12737` BEFESA ALEMANIA — H03;H04 FRB-40/KBV-40 (en_proceso, Bernburg Alemania) — FAT 83.3% + SAT 15.9%
-  (restaurado del soft-delete 14/05/2026)
-- `10517` BAUX — H01 (completado)
-- `11576` GLOBALCAST — (activo)
-- `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso, Ramos Arizpe México) — SAT mangueras cargadas
-- `14336` AMISSA — H01 RMA-R-30-B (en_proceso, TURQUISA) — FAT 23.2% (Mang 39%, Sen 23.4%, Pru 7.3%)
-- `12720` ARZYZ — H01 RMA-R-30-B (en_proceso, Monterrey México) — FAT+SAT completos con señales/pruebas reales
-- `12720` ARZYZ — H03;H04 FRB-65 y KBV65 (en_proceso) — FAT 88.5% (Mang 83.2%, Sen 91.7%, Pru 90.5%)
-- `12720` ARZYZ — H05 RMA-R-50-B (en_proceso) — FAT 88.5% (Mang 83.1%, Sen 95%, Pru 87.5%)
-- `12720` ARZYZ — H06 RMA-R-50-B (en_proceso) — FAT 85.0% (KPIs individuales estimados)
-- `12290` NAMA — H01 (en_proceso, Coahuila de Zaragoza México) — SAT: Mangueras 0%, Señales 96.8%, Pruebas 89.2% → Avance SAT 62%
-- `12545` Speira Neuss — H01 RAN-2R (en_proceso, Neuss Alemania) — FAT 16.5% + SAT 65.3%
-- `12545` Speira Neuss — H02 MCH-H-12 (en_proceso, Neuss Alemania) — SAT 32.0%
+### Proyectos (25 activos) — scripts en `/prisma/insert-*.ts`
 
-> BEFESA H03;H04 restaurado el 20/05/2026 con datos reales FAT+SAT (antes soft-deleted sin datos).
+| Orden | IDH | Cliente | Estado | Fase | Notas |
+|---|---|---|---|---|---|
+| 10517 | H01 | BAUX | completado | — | HHVF-G-TR-18 |
+| 10517 | H02 | BAUX | completado | — | MCB-D-25-D |
+| 11202 | H01 | Jupiter | en_proceso | FAT | RAN-60 |
+| 11202 | H02 | Jupiter | en_proceso | FAT | RMA-R-30-B |
+| 11559 | H01;H02 | Globalcast | activo | FAT | FRB30 y KBV30, Aguascalientes México |
+| 11559 | H03 | Globalcast | activo | SAT | RMA-30, Aguascalientes México |
+| 11576 | H01 | Holmestrand | activo | SAT | — |
+| 11576 | H05 | Holmestrand | en_proceso | FAT | — |
+| 11576 | H06 | Holmestrand | en_proceso | FAT | — |
+| 11721 | H01;H02 | AMISSA | en_proceso | SAT | Ramos Arizpe México |
+| 11721 | H03;H04 | AMISSA | en_proceso | SAT | Ramos Arizpe México |
+| 11721 | H05 | AMISSA | en_proceso | SAT | Ramos Arizpe México |
+| 11866 | H01 | ArcelorMittal | completado | — | FNG-200 |
+| 12290 | H01 | NAMA | en_proceso | SAT | SAT: Mang 0%, Sen 96.8%, Pru 89.2% |
+| 12545 | H01 | Speira Neuss | en_proceso | SAT | RAN-2R, FAT 16.5% + SAT 65.3% |
+| 12545 | H02 | Speira Neuss | en_proceso | SAT | MCH-H-12, SAT 32.0% |
+| 12720 | H01 | ARZYZ | en_proceso | SAT | RMA-R-30-B, Monterrey — FAT+SAT completos |
+| 12720 | H03;H04 | ARZYZ | en_proceso | FAT | FRB-65 y KBV65, FAT 88.5% |
+| 12720 | H05 | ARZYZ | en_proceso | FAT | RMA-R-50-B, FAT 88.5% |
+| 12720 | H06 | ARZYZ | en_proceso | FAT | RMA-R-50-B, FAT 85.0% |
+| 12737 | H01;H02 | BEFESA | en_proceso | FAT | FRB-40/KBV-40, Bernburg Alemania |
+| 12737 | H03;H04 | BEFESA | en_proceso | SAT | FRB-40/KBV-40, FAT 83.3% + SAT 15.9% |
+| 13420 | H01 | FD2 CONSTELLIUM | completado | — | RAN-R-70 |
+| 14336 | H01 | AMISSA | en_proceso | FAT | RMA-R-30-B TURQUISA, FAT 23.2% |
+| — | — | Audubon | en_proceso | FAT | — |
 
 ### Scripts de inserción
 Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
-- `insert-amissa.ts` — AMISSA 11721 (H01-H05 mangueras SAT)
-- `insert-arzyz.ts` — ARZYZ 12720-H01 (FAT+SAT completos)
-- `insert-nama.ts` — NAMA 12290-H01 (SAT señales+pruebas+mangueras)
-- `insert-neuss.ts` — Speira Neuss 12545 H01+H02 (H01: FAT+SAT, H02: SAT)
-- `insert-arzyz2.ts` — ARZYZ 12720 H03;H04 + H05 + H06 (FAT únicamente, SAT pendiente)
-- `insert-befesa2.ts` — BEFESA 12737 H03;H04 (restaurado + FAT 83.3% + SAT 15.9%)
-- `insert-amissa2.ts` — AMISSA 14336-H01 RMA-R-30-B TURQUISA (FAT 23.2%)
+- `insert-users.ts` — 46 usuarios con asignaciones (usa `$executeRaw` para SUPERVISOR)
+- `insert-completados.ts` — BAUX H01/H02, ArcelorMittal, FD2 (completados)
+- `insert-amissa.ts` — AMISSA 11721 H01-H05
+- `insert-amissa2.ts` — AMISSA 14336-H01 TURQUISA
+- `insert-arzyz.ts` — ARZYZ 12720-H01
+- `insert-arzyz2.ts` — ARZYZ 12720 H03;H04 + H05 + H06
+- `insert-befesa2.ts` — BEFESA 12737 H03;H04
+- `insert-nama.ts` — NAMA 12290-H01
+- `insert-neuss.ts` — Speira Neuss 12545 H01+H02
+- `insert-jupiter.ts` — Jupiter 11202 H01+H02
+- `insert-holmestrand.ts` — Holmestrand 11576
+- `insert-globalcast-rma.ts` — Globalcast 11559-H03 RMA
+- `insert-globalcast-h0102.ts` — Globalcast 11559-H01;H02 FRB/KBV
+- `insert-audubon.ts` — Audubon
