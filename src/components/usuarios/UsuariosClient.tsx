@@ -364,7 +364,7 @@ export default function UsuariosClient({
 
       {/* Edit Modal */}
       {editando && (
-        <Modal title={editando.nombre} onClose={() => setEditando(null)}>
+        <Modal open={true} title={editando.nombre} onClose={() => setEditando(null)}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 0 8px" }}>
             {/* Nº empleado */}
             <input
