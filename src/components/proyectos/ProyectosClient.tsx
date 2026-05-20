@@ -91,13 +91,23 @@ export default function ProyectosClient({ proyectos }: Props) {
   const filtered = proyectos.filter((p) => estadoFt === "todos" || p.estado === estadoFt)
   const estados  = Array.from(new Set(proyectos.map((p) => p.estado)))
 
-  // Todos los grupos de completados (para el desplegable)
-  const allGroups: Map<number, string | null> = new Map()
-  for (const p of proyectos.filter((p) => p.estado === "completado")) {
-    if (!allGroups.has(p.orden)) allGroups.set(p.orden, p.cliente)
+  // Desplegable disponible para en_proceso, activo y completado
+  const showDropdown = estadoFt === "en_proceso" || estadoFt === "activo" || estadoFt === "completado"
+
+  // Grupos únicos del estado actual (para el desplegable)
+  const dropdownGroups: Map<number, string | null> = new Map()
+  if (showDropdown) {
+    for (const p of filtered) {
+      if (!dropdownGroups.has(p.orden)) dropdownGroups.set(p.orden, p.cliente)
+    }
   }
 
-  // Grupos visibles según selección
+  // Tarjetas/tabla filtradas por orden seleccionado (en_proceso y activo)
+  const filteredCards = estadoFt !== "completado" && selectedOrdens.size > 0
+    ? filtered.filter((p) => selectedOrdens.has(p.orden))
+    : filtered
+
+  // Grupos visibles según selección (completado — vista acordeón)
   const completadosGroups: Map<number, { cliente: string | null; items: typeof filtered }> = new Map()
   if (estadoFt === "completado") {
     for (const p of filtered) {
@@ -172,8 +182,8 @@ export default function ProyectosClient({ proyectos }: Props) {
         )}
       </div>
 
-      {/* ── Desplegable filtro Finalizados ── */}
-      {estadoFt === "completado" && (
+      {/* ── Desplegable filtro (En proceso / Activo / Finalizados) ── */}
+      {showDropdown && dropdownGroups.size > 1 && (
         <div style={{ marginBottom: 20 }} ref={dropdownRef}>
           <div style={{ position: "relative", display: "inline-block" }}>
             <button
@@ -189,8 +199,8 @@ export default function ProyectosClient({ proyectos }: Props) {
             >
               <span style={{ flex: 1, textAlign: "left" }}>
                 {selectedOrdens.size === 0
-                  ? "Selecciona Proyecto Finalizado"
-                  : `${selectedOrdens.size} seleccionado${selectedOrdens.size > 1 ? "s" : ""}`}
+                  ? "Filtrar por proyecto..."
+                  : `${selectedOrdens.size} proyecto${selectedOrdens.size > 1 ? "s" : ""} seleccionado${selectedOrdens.size > 1 ? "s" : ""}`}
               </span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C0022C" strokeWidth="2.5"
                 style={{ transform: dropdownOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
@@ -216,7 +226,7 @@ export default function ProyectosClient({ proyectos }: Props) {
                     Mostrar todos
                   </button>
                 )}
-                {Array.from(allGroups.entries()).map(([orden, cliente]) => (
+                {Array.from(dropdownGroups.entries()).map(([orden, cliente]) => (
                   <label key={orden} style={{
                     display: "flex", alignItems: "center", gap: 10,
                     padding: "9px 14px", cursor: "pointer",
@@ -247,8 +257,8 @@ export default function ProyectosClient({ proyectos }: Props) {
       {/* ── Vista tarjetas — no completados ── */}
       {view === "tarjetas" && estadoFt !== "completado" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 16 }}>
-          {filtered.map((p) => <ProyectoCard key={p.id} proyecto={p} />)}
-          {filtered.length === 0 && (
+          {filteredCards.map((p) => <ProyectoCard key={p.id} proyecto={p} />)}
+          {filteredCards.length === 0 && (
             <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 60, color: "#959595" }}>
               Sin proyectos con ese filtro
             </div>
@@ -323,7 +333,7 @@ export default function ProyectosClient({ proyectos }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => (
+                {filteredCards.map((p, i) => (
                   <tr key={p.id} style={{ background: i % 2 === 0 ? "white" : "#FAFAFA" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#FFF5F6")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "white" : "#FAFAFA")}
@@ -375,7 +385,7 @@ export default function ProyectosClient({ proyectos }: Props) {
                     <TD visible={v("satSen")}>{p.sat.totalSenales > 0 ? `${fmt(p.sat.pctSenales)}%` : "—"}</TD>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
+                {filteredCards.length === 0 && (
                   <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: "#959595" }}>Sin proyectos con ese filtro</td></tr>
                 )}
               </tbody>
