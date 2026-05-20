@@ -52,28 +52,28 @@ export default function AvanceChart({ historico, codigo }: Props) {
 
   // ── FAT ──────────────────────────────────────────────────────────────────────
   const fatData = sorted.map((h) => ({
-    fecha:         fmtFecha(h.fecha),
-    "Mangueras FAT": n(h.porcentajeManguerasFat),
-    "Señales FAT":   n(h.porcentajeSenalesFat),
-    "Pruebas FAT":   n(h.porcentajePruebasFat),
-    "Total FAT":     n(h.porcentajeFat),
+    fecha:          fmtFecha(h.fecha),
+    "AvanceFAT":    n(h.porcentajeFat),
+    "ManguerasFAT": n(h.porcentajeManguerasFat),
+    "SeñalesFAT":   n(h.porcentajeSenalesFat),
+    "PruebasFAT":   n(h.porcentajePruebasFat),
   }))
 
   // ── SAT ──────────────────────────────────────────────────────────────────────
   const satData = sorted.map((h) => ({
-    fecha:         fmtFecha(h.fecha),
-    "Mangueras SAT": n(h.porcentajeManguerasSat),
-    "Señales SAT":   n(h.porcentajeSenalesSat),
-    "Pruebas SAT":   n(h.porcentajePruebasSat),
-    "Total SAT":     n(h.porcentajeSat),
+    fecha:          fmtFecha(h.fecha),
+    "AvanceSAT":    n(h.porcentajeSat),
+    "ManguerasSAT": n(h.porcentajeManguerasSat),
+    "SeñalesSAT":   n(h.porcentajeSenalesSat),
+    "PruebasSAT":   n(h.porcentajePruebasSat),
   }))
 
   // ── TOTAL ─────────────────────────────────────────────────────────────────────
   const totalData = sorted.map((h) => ({
     fecha:       fmtFecha(h.fecha),
-    "Total FAT": n(h.porcentajeFat),
-    "Total SAT": n(h.porcentajeSat),
-    "Total":     n(h.porcentajeTotal),
+    "AvanceFAT": n(h.porcentajeFat),
+    "AvanceSAT": n(h.porcentajeSat),
+    "AvanceTOTAL": n(h.porcentajeTotal),
   }))
 
   // ── Tabla + líneas según tab activo ──────────────────────────────────────────
@@ -83,10 +83,10 @@ export default function AvanceChart({ historico, codigo }: Props) {
       rows: sorted.map((h) => [pct(h.porcentajeManguerasFat), pct(h.porcentajeSenalesFat), pct(h.porcentajePruebasFat), pct(h.porcentajeFat)]),
       chartData: fatData,
       lines: [
-        { key: "Mangueras FAT", color: "#F97316" },
-        { key: "Señales FAT",   color: "#8B5CF6" },
-        { key: "Pruebas FAT",   color: "#EC4899" },
-        { key: "Total FAT",     color: "#3B82F6" },
+        { key: "AvanceFAT",    color: "#3B82F6" },
+        { key: "ManguerasFAT", color: "#1D4ED8" },
+        { key: "SeñalesFAT",   color: "#F97316" },
+        { key: "PruebasFAT",   color: "#A855F7" },
       ],
     },
     SAT: {
@@ -94,20 +94,20 @@ export default function AvanceChart({ historico, codigo }: Props) {
       rows: sorted.map((h) => [pct(h.porcentajeManguerasSat), pct(h.porcentajeSenalesSat), pct(h.porcentajePruebasSat), pct(h.porcentajeSat)]),
       chartData: satData,
       lines: [
-        { key: "Mangueras SAT", color: "#F97316" },
-        { key: "Señales SAT",   color: "#8B5CF6" },
-        { key: "Pruebas SAT",   color: "#EC4899" },
-        { key: "Total SAT",     color: "#1D4ED8" },
+        { key: "AvanceSAT",    color: "#3B82F6" },
+        { key: "ManguerasSAT", color: "#F97316" },
+        { key: "SeñalesSAT",   color: "#1D4ED8" },
+        { key: "PruebasSAT",   color: "#EC4899" },
       ],
     },
     TOTAL: {
-      cols: ["% Total FAT", "% Total SAT", "% Total"],
+      cols: ["% Avance FAT", "% Avance SAT", "% Avance TOTAL"],
       rows: sorted.map((h) => [pct(h.porcentajeFat), pct(h.porcentajeSat), pct(h.porcentajeTotal)]),
       chartData: totalData,
       lines: [
-        { key: "Total FAT", color: "#3B82F6" },
-        { key: "Total SAT", color: "#1D4ED8" },
-        { key: "Total",     color: "#C0022C" },
+        { key: "AvanceSAT",   color: "#3B82F6" },
+        { key: "AvanceFAT",   color: "#1D4ED8" },
+        { key: "AvanceTOTAL", color: "#F97316" },
       ],
     },
   }
@@ -170,11 +170,11 @@ export default function AvanceChart({ historico, codigo }: Props) {
               <LineChart data={active.chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                 <XAxis dataKey="fecha" tick={{ fontSize: 11, fill: "#9CA3AF" }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9CA3AF" }} tickFormatter={(v) => `${v}%`} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9CA3AF" }} tickFormatter={(v) => `${v}`} />
                 <Tooltip formatter={(value: number) => [`${value.toFixed(2)}%`]} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 {active.lines.map((l) => (
-                  <Line key={l.key} type="monotone" dataKey={l.key} stroke={l.color} strokeWidth={2} dot={{ r: 3 }} />
+                  <Line key={l.key} type="stepAfter" dataKey={l.key} stroke={l.color} strokeWidth={1.5} dot={{ r: 2 }} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
