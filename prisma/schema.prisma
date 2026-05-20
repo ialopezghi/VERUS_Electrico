@@ -27,6 +27,7 @@ enum RolUsuario {
   JEFE_OBRA
   OPERARIO
   VISOR
+  SUPERVISOR
 }
 
 model User {
