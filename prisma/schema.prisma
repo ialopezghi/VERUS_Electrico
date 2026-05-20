@@ -57,6 +57,7 @@ model Proyecto {
   estado     EstadoProyecto @default(en_proceso)
   activo     Boolean        @default(true)
   pausado    Boolean        @default(false)
+  faseActual FaseMontaje?   @map("fase_actual")
 
   fatCanalIni DateTime? @map("fat_canal_ini") @db.Timestamptz
   fatCanalFin DateTime? @map("fat_canal_fin") @db.Timestamptz
