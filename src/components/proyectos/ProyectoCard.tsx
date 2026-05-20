@@ -34,9 +34,9 @@ function resolverImagen(proyecto: { nombre: string | null; cliente: string | nul
   if (texto.includes("DESESCORIADORA"))                                                   return "/img-desescoriadora.png"
   if (texto.includes("MCH"))                                                              return "/img-mch.png"
   if (texto.includes("CONTINUO"))                                                         return "/img-continuo.png"
+  if (texto.includes("FRB"))                                                              return "/img-frb.png"
   if (texto.includes("ARZYZ"))                                                            return "/img-arzyz.png"
   if (texto.includes("RMA"))                                                              return "/img-rma.png"
-  if (texto.includes("FRB"))                                                              return "/img-frb.png"
   if (texto.includes("GLOBALCAST") || texto.includes("KBV"))                             return "/ghi-machine.png"
   return "/ghi-machine.png"
 }

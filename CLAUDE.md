@@ -249,9 +249,9 @@ Función en `ProyectoCard.tsx`. Mapeo por keywords en nombre/cliente/tipoEquipo:
 | DESESCORIADORA | `/img-desescoriadora.png` |
 | MCH | `/img-mch.png` |
 | CONTINUO | `/img-continuo.png` |
+| FRB | `/img-frb.png` |
 | ARZYZ | `/img-arzyz.png` |
 | RMA | `/img-rma.png` |
-| FRB | `/img-frb.png` |
 | GLOBALCAST, KBV | `/ghi-machine.png` |
 | resto | `/ghi-machine.png` |
 
@@ -346,7 +346,10 @@ Proyectos en BD (scripts de inserción en `/prisma/insert-*.ts`):
 - `10517` BAUX — H01 (completado)
 - `11576` GLOBALCAST — (activo)
 - `11721` AMISSA — H01;H02, H03;H04, H05 (en_proceso) — SAT mangueras cargadas
-- `12720` ARZYZ — H01 (en_proceso) — datos FAT+SAT completos (señales, pruebas, mangueras)
+- `12720` ARZYZ — H01 RMA-R-30-B (en_proceso, Monterrey México) — FAT+SAT completos con señales/pruebas reales
+- `12720` ARZYZ — H03;H04 FRB-65 y KBV65 (en_proceso) — FAT 88.5% (Mang 83.2%, Sen 91.7%, Pru 90.5%)
+- `12720` ARZYZ — H05 RMA-R-50-B (en_proceso) — FAT 88.5% (Mang 83.1%, Sen 95%, Pru 87.5%)
+- `12720` ARZYZ — H06 RMA-R-50-B (en_proceso) — FAT 85.0% (KPIs individuales estimados)
 - `12290` NAMA — H01 (en_proceso, Coahuila de Zaragoza México) — SAT: Mangueras 0%, Señales 96.8%, Pruebas 89.2% → Avance SAT 62%
 - `12545` Speira Neuss — H01 RAN-2R (en_proceso, Neuss Alemania) — FAT 16.5% + SAT 65.3%
 - `12545` Speira Neuss — H02 MCH-H-12 (en_proceso, Neuss Alemania) — SAT 32.0%
@@ -359,3 +362,4 @@ Ejecutar con: `npx tsx prisma/insert-<nombre>.ts`
 - `insert-arzyz.ts` — ARZYZ 12720-H01 (FAT+SAT completos)
 - `insert-nama.ts` — NAMA 12290-H01 (SAT señales+pruebas+mangueras)
 - `insert-neuss.ts` — Speira Neuss 12545 H01+H02 (H01: FAT+SAT, H02: SAT)
+- `insert-arzyz2.ts` — ARZYZ 12720 H03;H04 + H05 + H06 (FAT únicamente, SAT pendiente)
