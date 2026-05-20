@@ -21,7 +21,8 @@ interface Props {
   }
 }
 
-function resolverImagen(proyecto: { nombre: string | null; cliente: string | null; tipoEquipo: string | null; imagenUrl?: string | null }) {
+function resolverImagen(proyecto: { nombre: string | null; cliente: string | null; tipoEquipo: string | null; imagenUrl?: string | null }): string | null {
+  if (proyecto.imagenUrl === "none") return null
   if (proyecto.imagenUrl) return proyecto.imagenUrl
   const texto = `${proyecto.nombre ?? ""} ${proyecto.cliente ?? ""} ${proyecto.tipoEquipo ?? ""}`.toUpperCase()
   if (texto.includes("MCB"))                                                              return "/img-baux-mcb.png"
@@ -34,6 +35,7 @@ function resolverImagen(proyecto: { nombre: string | null; cliente: string | nul
   if (texto.includes("DESESCORIADORA"))                                                   return "/img-desescoriadora.png"
   if (texto.includes("MCH"))                                                              return "/img-mch.png"
   if (texto.includes("CONTINUO"))                                                         return "/img-continuo.png"
+  if (texto.includes("SOWERA"))                                                           return null
   if (texto.includes("FRB"))                                                              return "/img-frb.png"
   if (texto.includes("ARZYZ"))                                                            return "/img-arzyz.png"
   if (texto.includes("RMA"))                                                              return "/img-rma.png"
@@ -141,11 +143,13 @@ export default function ProyectoCard({ proyecto }: Props) {
             display: "flex", flexDirection: "column", alignItems: "center",
             justifyContent: "center", padding: "12px 10px", gap: 8,
           }}>
-            <img
-              src={imagen}
-              alt={proyecto.tipoEquipo ?? "Equipo GHI"}
-              style={{ width: "100%", maxWidth: 100, height: 80, objectFit: "contain" }}
-            />
+            {imagen && (
+              <img
+                src={imagen}
+                alt={proyecto.tipoEquipo ?? "Equipo GHI"}
+                style={{ width: "100%", maxWidth: 100, height: 80, objectFit: "contain" }}
+              />
+            )}
             <div style={{ width: "100%", textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "#595959", marginBottom: 2 }}>
                 Avance Total (%): <strong style={{ color: "#333333" }}>{fmt(proyecto.total)}</strong>
