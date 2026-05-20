@@ -183,7 +183,7 @@ export default function ProyectosClient({ proyectos }: Props) {
       </div>
 
       {/* ── Desplegable filtro (En proceso / Activo / Finalizados) ── */}
-      {showDropdown && dropdownGroups.size > 1 && (
+      {showDropdown && dropdownGroups.size > 0 && (
         <div style={{ marginBottom: 20 }} ref={dropdownRef}>
           <div style={{ position: "relative", display: "inline-block" }}>
             <button
