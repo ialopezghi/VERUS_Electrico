@@ -61,11 +61,11 @@ export default function AvanceChart({ historico, codigo }: Props) {
 
   // ── SAT ──────────────────────────────────────────────────────────────────────
   const satData = sorted.map((h) => ({
-    fecha:          fmtFecha(h.fecha),
-    "AvanceSAT":    n(h.porcentajeSat),
-    "ManguerasSAT": n(h.porcentajeManguerasSat),
-    "SeñalesSAT":   n(h.porcentajeSenalesSat),
-    "PruebasSAT":   n(h.porcentajePruebasSat),
+    fecha:           fmtFecha(h.fecha),
+    "AvanceSAT":     n(h.porcentajeSat),
+    "ManguerasPEM":  n(h.porcentajeManguerasSat),
+    "SeñalesSAT":    n(h.porcentajeSenalesSat),
+    "PruebasSAT":    n(h.porcentajePruebasSat),
   }))
 
   // ── TOTAL ─────────────────────────────────────────────────────────────────────
@@ -90,14 +90,14 @@ export default function AvanceChart({ historico, codigo }: Props) {
       ],
     },
     SAT: {
-      cols: ["% Mangueras SAT", "% Señales SAT", "% Pruebas SAT", "% Total SAT"],
+      cols: ["% Mangueras PEM SAT", "% Señales SAT", "% Pruebas SAT", "% Total SAT"],
       rows: sorted.map((h) => [pct(h.porcentajeManguerasSat), pct(h.porcentajeSenalesSat), pct(h.porcentajePruebasSat), pct(h.porcentajeSat)]),
       chartData: satData,
       lines: [
-        { key: "AvanceSAT",    color: "#3B82F6" },
-        { key: "ManguerasSAT", color: "#F97316" },
-        { key: "SeñalesSAT",   color: "#1D4ED8" },
-        { key: "PruebasSAT",   color: "#EC4899" },
+        { key: "AvanceSAT",   color: "#3B82F6" },
+        { key: "ManguerasPEM", color: "#F97316" },
+        { key: "SeñalesSAT",  color: "#1D4ED8" },
+        { key: "PruebasSAT",  color: "#EC4899" },
       ],
     },
     TOTAL: {
