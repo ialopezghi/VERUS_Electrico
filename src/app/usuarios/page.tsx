@@ -10,18 +10,25 @@ export default async function UsuariosPage() {
   const session = await auth()
   if (!session) redirect("/login")
 
-  const usuarios = await db.user.findMany({
-    include: {
-      asignaciones: {
-        include: { proyecto: { select: { idh: true, orden: true } } },
+  const [usuarios, proyectos] = await Promise.all([
+    db.user.findMany({
+      include: {
+        asignaciones: {
+          include: { proyecto: { select: { id: true, idh: true, orden: true, nombre: true } } },
+        },
       },
-    },
-    orderBy: { nombre: "asc" },
-  })
+      orderBy: { nombre: "asc" },
+    }),
+    db.proyecto.findMany({
+      where: { deletedAt: null, activo: true },
+      select: { id: true, orden: true, idh: true, nombre: true },
+      orderBy: [{ orden: "asc" }, { idh: "asc" }],
+    }),
+  ])
 
   return (
     <AppShell>
-      <UsuariosClient usuarios={usuarios as any} />
+      <UsuariosClient usuarios={usuarios as any} proyectos={proyectos} />
     </AppShell>
   )
 }

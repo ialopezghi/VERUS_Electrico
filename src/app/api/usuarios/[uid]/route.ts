@@ -34,6 +34,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (key in body) data[key] = body[key]
   }
 
-  const usuario = await db.user.update({ where: { id: uid }, data })
+  if (Object.keys(data).length > 0) {
+    await db.user.update({ where: { id: uid }, data })
+  }
+
+  if ("asignaciones" in body && Array.isArray(body.asignaciones)) {
+    const proyectoIds: string[] = body.asignaciones
+    await db.asignacion.deleteMany({ where: { userId: uid } })
+    if (proyectoIds.length > 0) {
+      await db.asignacion.createMany({
+        data: proyectoIds.map(proyectoId => ({
+          userId: uid, proyectoId, createdBy: session.user?.email ?? "system",
+        })),
+        skipDuplicates: true,
+      })
+    }
+  }
+
+  const usuario = await db.user.findUniqueOrThrow({
+    where: { id: uid },
+    include: { asignaciones: { include: { proyecto: { select: { idh: true, orden: true } } } } },
+  })
   return NextResponse.json(usuario)
 }

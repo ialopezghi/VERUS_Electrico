@@ -1,7 +1,7 @@
 "use client"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import Modal from "@/components/ui/Modal"
-import { FormField, inputStyle, selectStyle } from "@/components/ui/FormField"
+import { inputStyle } from "@/components/ui/FormField"
 import { codProyecto } from "@/lib/kpi"
 
 const ROL_LABELS: Record<string, string> = {
@@ -20,8 +20,12 @@ const ROL_COLORS: Record<string, { bg: string; color: string }> = {
   VISOR:      { bg: "#FEF9C3", color: "#92400E" },
 }
 
+interface AsignProyecto {
+  id: string; idh: string; orden: number; nombre: string | null
+}
+
 interface Asignacion {
-  proyecto: { idh: string; orden: number }
+  proyecto: AsignProyecto
 }
 
 interface Usuario {
@@ -35,16 +39,148 @@ interface Usuario {
   asignaciones: Asignacion[]
 }
 
+interface ProyectoOpt {
+  id: string; orden: number; idh: string; nombre: string | null
+}
+
+// ── Multi-select de proyectos ──────────────────────────────────────────────────
+function ProyectoPicker({
+  todos,
+  selected,
+  onChange,
+}: {
+  todos: ProyectoOpt[]
+  selected: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [buscar, setBuscar] = useState("")
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", handle)
+    return () => document.removeEventListener("mousedown", handle)
+  }, [])
+
+  const disponibles = useMemo(() => {
+    const q = buscar.toLowerCase()
+    return todos.filter(p => {
+      const cod = codProyecto(p.orden, p.idh)
+      const nom = p.nombre ?? ""
+      return (cod.toLowerCase().includes(q) || nom.toLowerCase().includes(q))
+    })
+  }, [todos, buscar])
+
+  const selectedProyectos = todos.filter(p => selected.includes(p.id))
+  const unselected = disponibles.filter(p => !selected.includes(p.id))
+
+  function add(id: string) { onChange([...selected, id]); setBuscar("") }
+  function remove(id: string) { onChange(selected.filter(x => x !== id)) }
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      {/* Tags + toggle */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          minHeight: 38, border: "1px solid #E0E0E0", borderRadius: 2, padding: "4px 8px",
+          cursor: "pointer", background: "#fff", display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center",
+        }}
+      >
+        {selectedProyectos.map(p => (
+          <span key={p.id} style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            background: "#F2F2F2", borderRadius: 2, padding: "2px 6px", fontSize: 11, color: "#333",
+          }}>
+            {codProyecto(p.orden, p.idh)}
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); remove(p.id) }}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, color: "#959595", fontSize: 13 }}>
+              ×
+            </button>
+          </span>
+        ))}
+        {selectedProyectos.length === 0 && (
+          <span style={{ color: "#959595", fontSize: 12 }}>Sin asignaciones</span>
+        )}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#959595" strokeWidth="2"
+          style={{ marginLeft: "auto", flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+          background: "#fff", border: "1px solid #E0E0E0", borderRadius: 2,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.12)", maxHeight: 280, overflow: "hidden",
+          display: "flex", flexDirection: "column",
+        }}>
+          <div style={{ padding: "6px 8px", borderBottom: "1px dashed #E0E0E0" }}>
+            <input
+              autoFocus
+              type="text"
+              placeholder="Buscar elementos"
+              value={buscar}
+              onChange={e => setBuscar(e.target.value)}
+              onClick={e => e.stopPropagation()}
+              style={{ width: "100%", border: "none", outline: "none", fontSize: 12, color: "#333", background: "transparent", boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ overflowY: "auto", flex: 1 }}>
+            {unselected.length === 0 && (
+              <div style={{ padding: "12px 12px", color: "#959595", fontSize: 12 }}>
+                {buscar ? "Sin resultados" : "Todos los proyectos ya asignados"}
+              </div>
+            )}
+            {unselected.map(p => (
+              <div
+                key={p.id}
+                onClick={() => add(p.id)}
+                style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #F9F9F9" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#F9F9F9")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#C0022C" }}>
+                  {codProyecto(p.orden, p.idh)}
+                </div>
+                {p.nombre && (
+                  <div style={{ fontSize: 11, color: "#959595", marginTop: 1 }}>{p.nombre}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Header de tabla ────────────────────────────────────────────────────────────
 const TH = ({ children }: { children: React.ReactNode }) => (
   <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#959595", borderBottom: "2px solid #E0E0E0", textTransform: "uppercase", letterSpacing: "0.08em", background: "#F2F2F2", whiteSpace: "nowrap" }}>
     {children}
   </th>
 )
 
-export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuario[] }) {
+// ── Componente principal ───────────────────────────────────────────────────────
+export default function UsuariosClient({
+  usuarios: initial,
+  proyectos,
+}: {
+  usuarios: Usuario[]
+  proyectos: ProyectoOpt[]
+}) {
   const [usuarios, setUsuarios] = useState(initial)
   const [query, setQuery] = useState("")
   const [editando, setEditando] = useState<Usuario | null>(null)
+  const [editEmp, setEditEmp] = useState("")
+  const [editAsig, setEditAsig] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   const filtrados = useMemo(() => {
@@ -58,35 +194,57 @@ export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuari
     )
   }, [usuarios, query])
 
+  function abrirEdicion(u: Usuario) {
+    setEditando(u)
+    setEditEmp(u.numeroEmpleado != null ? String(u.numeroEmpleado) : "")
+    setEditAsig(u.asignaciones.map(a => a.proyecto.id))
+  }
+
   async function patchUsuario(id: string, data: Record<string, unknown>) {
     const res = await fetch(`/api/usuarios/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-    if (!res.ok) { alert("Error al guardar"); return false }
-    const updated = await res.json()
-    setUsuarios(prev => prev.map(u => u.id === id ? { ...u, ...updated } : u))
-    return true
+    if (!res.ok) { alert("Error al guardar"); return null }
+    return await res.json()
   }
 
   async function toggleActivo(u: Usuario) {
-    await patchUsuario(u.id, { activo: !u.activo })
+    const updated = await patchUsuario(u.id, { activo: !u.activo })
+    if (updated) setUsuarios(prev => prev.map(x => x.id === u.id ? { ...x, ...updated } : x))
   }
 
-  async function guardarEdicion(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function insertar() {
     if (!editando) return
     setSaving(true)
-    const fd = new FormData(e.currentTarget)
-    const ok = await patchUsuario(editando.id, {
-      nombre:         fd.get("nombre") as string,
-      puesto:         fd.get("puesto") as string,
-      rol:            fd.get("rol") as string,
-      numeroEmpleado: fd.get("numeroEmpleado") ? Number(fd.get("numeroEmpleado")) : null,
+    const updated = await patchUsuario(editando.id, {
+      numeroEmpleado: editEmp !== "" ? Number(editEmp) : null,
+      asignaciones: editAsig,
     })
     setSaving(false)
-    if (ok) setEditando(null)
+    if (updated) {
+      setUsuarios(prev => prev.map(u => u.id === editando.id ? { ...u, ...updated } : u))
+      setEditando(null)
+    }
+  }
+
+  async function eliminar() {
+    if (!editando) return
+    if (!confirm(`¿Desactivar a ${editando.nombre}?`)) return
+    setSaving(true)
+    const updated = await patchUsuario(editando.id, { activo: false })
+    setSaving(false)
+    if (updated) {
+      setUsuarios(prev => prev.map(u => u.id === editando.id ? { ...u, ...updated } : u))
+      setEditando(null)
+    }
+  }
+
+  const btnBase: React.CSSProperties = {
+    flex: 1, padding: "10px 0", border: "none", cursor: saving ? "not-allowed" : "pointer",
+    fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
+    borderRadius: 2, opacity: saving ? 0.6 : 1,
   }
 
   return (
@@ -96,7 +254,9 @@ export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuari
         <h1 style={{ fontSize: 20, fontWeight: 700, color: "#333333", letterSpacing: "0.02em", textTransform: "uppercase" }}>
           Usuarios
         </h1>
-        <span style={{ fontSize: 12, color: "#959595" }}>{usuarios.filter(u => u.activo).length} activos · {usuarios.length} total</span>
+        <span style={{ fontSize: 12, color: "#959595" }}>
+          {usuarios.filter(u => u.activo).length} activos · {usuarios.length} total
+        </span>
       </div>
 
       {/* Search */}
@@ -141,28 +301,23 @@ export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuari
 
               return (
                 <tr key={u.id} style={{ background: i % 2 === 0 ? "#FEFEFE" : "#F9F9F9" }}>
-                  {/* Empleado */}
                   <td style={{ padding: "12px 14px", borderBottom: "1px solid #F2F2F2" }}>
                     <div style={{ fontWeight: 700, color: "#333333" }}>{u.nombre}</div>
                     {u.numeroEmpleado != null && (
                       <div style={{ fontSize: 10, color: "#959595", marginTop: 2 }}>#{u.numeroEmpleado}</div>
                     )}
                   </td>
-                  {/* Puesto */}
                   <td style={{ padding: "12px 14px", color: "#959595", borderBottom: "1px solid #F2F2F2", fontSize: 12, fontStyle: "italic" }}>
                     {u.puesto || "—"}
                   </td>
-                  {/* Mail */}
                   <td style={{ padding: "12px 14px", borderBottom: "1px solid #F2F2F2", fontSize: 12 }}>
                     <a href={`mailto:${u.email}`} style={{ color: "#C0022C", textDecoration: "none" }}>{u.email}</a>
                   </td>
-                  {/* Rol */}
                   <td style={{ padding: "12px 14px", borderBottom: "1px solid #F2F2F2" }}>
                     <span style={{ padding: "3px 8px", borderRadius: 2, fontSize: 10, fontWeight: 700, background: rc.bg, color: rc.color, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                       {ROL_LABELS[u.rol] ?? u.rol}
                     </span>
                   </td>
-                  {/* Activar toggle */}
                   <td style={{ padding: "12px 14px", borderBottom: "1px solid #F2F2F2" }}>
                     <button
                       onClick={() => toggleActivo(u)}
@@ -170,8 +325,7 @@ export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuari
                       style={{
                         width: 38, height: 22, borderRadius: 11, border: "none", cursor: "pointer",
                         background: u.activo ? "#22C55E" : "#D1D5DB",
-                        position: "relative", transition: "background 0.2s", flexShrink: 0,
-                        display: "inline-block",
+                        position: "relative", transition: "background 0.2s", display: "inline-block",
                       }}
                     >
                       <span style={{
@@ -181,13 +335,11 @@ export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuari
                       }} />
                     </button>
                   </td>
-                  {/* Proyectos */}
                   <td style={{ padding: "12px 14px", color: "#959595", borderBottom: "1px solid #F2F2F2", fontSize: 11, maxWidth: 280, lineHeight: 1.5 }}>
                     {proyectosStr}
                   </td>
-                  {/* Edit */}
                   <td style={{ padding: "12px 14px", borderBottom: "1px solid #F2F2F2", textAlign: "center" }}>
-                    <button onClick={() => setEditando(u)}
+                    <button onClick={() => abrirEdicion(u)}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#959595", padding: 4, borderRadius: 2 }}
                       title="Editar usuario">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -212,40 +364,42 @@ export default function UsuariosClient({ usuarios: initial }: { usuarios: Usuari
 
       {/* Edit Modal */}
       {editando && (
-        <Modal title={`Editar — ${editando.nombre}`} onClose={() => setEditando(null)}>
-          <form onSubmit={guardarEdicion} style={{ display: "flex", flexDirection: "column", gap: 14, padding: "4px 0" }}>
-            <FormField label="Nombre">
-              <input name="nombre" defaultValue={editando.nombre} required style={inputStyle} />
-            </FormField>
-            <FormField label="Puesto">
-              <input name="puesto" defaultValue={editando.puesto ?? ""} style={inputStyle} />
-            </FormField>
-            <FormField label="Nº Empleado">
-              <input name="numeroEmpleado" type="number" defaultValue={editando.numeroEmpleado ?? ""} style={inputStyle} />
-            </FormField>
-            <FormField label="Rol">
-              <select name="rol" defaultValue={editando.rol} style={selectStyle}>
-                <option value="ADMIN">Administrador</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="JEFE_OBRA">Jefe de Obra</option>
-                <option value="OPERARIO">Operario</option>
-                <option value="VISOR">Visor</option>
-              </select>
-            </FormField>
-            <div style={{ fontSize: 11, color: "#959595", background: "#F9F9F9", borderRadius: 4, padding: "8px 10px" }}>
-              Email: <strong>{editando.email}</strong>
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-              <button type="button" onClick={() => setEditando(null)}
-                style={{ padding: "8px 16px", borderRadius: 2, border: "1px solid #E0E0E0", background: "#fff", cursor: "pointer", fontSize: 12, color: "#333333" }}>
-                Cancelar
+        <Modal title={editando.nombre} onClose={() => setEditando(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 0 8px" }}>
+            {/* Nº empleado */}
+            <input
+              type="number"
+              value={editEmp}
+              onChange={e => setEditEmp(e.target.value)}
+              placeholder="Nº empleado"
+              style={{ ...inputStyle, width: "100%", boxSizing: "border-box" }}
+            />
+
+            {/* Proyectos multi-select */}
+            <ProyectoPicker
+              todos={proyectos}
+              selected={editAsig}
+              onChange={setEditAsig}
+            />
+
+            {/* Botones */}
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={eliminar}
+                disabled={saving}
+                style={{ ...btnBase, background: "#E0E0E0", color: "#333333" }}>
+                Eliminar
               </button>
-              <button type="submit" disabled={saving}
-                style={{ padding: "8px 16px", borderRadius: 2, border: "none", background: "#C0022C", color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700, opacity: saving ? 0.6 : 1 }}>
-                {saving ? "Guardando…" : "Guardar"}
+              <button
+                type="button"
+                onClick={insertar}
+                disabled={saving}
+                style={{ ...btnBase, background: "#C0022C", color: "#fff" }}>
+                {saving ? "Guardando…" : "Insertar"}
               </button>
             </div>
-          </form>
+          </div>
         </Modal>
       )}
     </div>
