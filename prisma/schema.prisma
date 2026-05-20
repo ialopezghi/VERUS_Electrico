@@ -216,10 +216,11 @@ model HistoricoAvance {
   porcentajeSenalesFat   Decimal @default(0) @map("porcentaje_senales_fat")   @db.Decimal(5, 2)
   porcentajeManguerasFat Decimal @default(0) @map("porcentaje_mangueras_fat") @db.Decimal(5, 2)
 
-  porcentajeSat          Decimal @default(0) @map("porcentaje_sat")           @db.Decimal(5, 2)
-  porcentajePruebasSat   Decimal @default(0) @map("porcentaje_pruebas_sat")   @db.Decimal(5, 2)
-  porcentajeSenalesSat   Decimal @default(0) @map("porcentaje_senales_sat")   @db.Decimal(5, 2)
-  porcentajeManguerasSat Decimal @default(0) @map("porcentaje_mangueras_sat") @db.Decimal(5, 2)
+  porcentajeSat            Decimal @default(0) @map("porcentaje_sat")              @db.Decimal(5, 2)
+  porcentajePruebasSat     Decimal @default(0) @map("porcentaje_pruebas_sat")      @db.Decimal(5, 2)
+  porcentajeSenalesSat     Decimal @default(0) @map("porcentaje_senales_sat")      @db.Decimal(5, 2)
+  porcentajeManguerasSat   Decimal @default(0) @map("porcentaje_mangueras_sat")    @db.Decimal(5, 2)
+  porcentajeManguerasPfSat Decimal @default(0) @map("porcentaje_mangueras_pf_sat") @db.Decimal(5, 2)
 
   porcentajeTotal Decimal @default(0) @map("porcentaje_total") @db.Decimal(5, 2)
 

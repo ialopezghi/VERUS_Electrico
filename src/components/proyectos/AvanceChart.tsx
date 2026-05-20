@@ -9,15 +9,16 @@ import {
 interface HistoricoAvance {
   id: string
   fecha: Date | string
-  porcentajeFat:          number | string
-  porcentajeManguerasFat: number | string
-  porcentajeSenalesFat:   number | string
-  porcentajePruebasFat:   number | string
-  porcentajeSat:          number | string
-  porcentajeManguerasSat: number | string
-  porcentajeSenalesSat:   number | string
-  porcentajePruebasSat:   number | string
-  porcentajeTotal:        number | string
+  porcentajeFat:            number | string
+  porcentajeManguerasFat:   number | string
+  porcentajeSenalesFat:     number | string
+  porcentajePruebasFat:     number | string
+  porcentajeSat:            number | string
+  porcentajeManguerasSat:   number | string
+  porcentajeManguerasPfSat: number | string
+  porcentajeSenalesSat:     number | string
+  porcentajePruebasSat:     number | string
+  porcentajeTotal:          number | string
 }
 
 interface Props {
@@ -64,6 +65,7 @@ export default function AvanceChart({ historico, codigo }: Props) {
     fecha:           fmtFecha(h.fecha),
     "AvanceSAT":     n(h.porcentajeSat),
     "ManguerasPEM":  n(h.porcentajeManguerasSat),
+    "ManguerasPF":   n(h.porcentajeManguerasPfSat),
     "SeñalesSAT":    n(h.porcentajeSenalesSat),
     "PruebasSAT":    n(h.porcentajePruebasSat),
   }))
@@ -90,13 +92,14 @@ export default function AvanceChart({ historico, codigo }: Props) {
       ],
     },
     SAT: {
-      cols: ["% Mangueras PEM SAT", "% Señales SAT", "% Pruebas SAT", "% Total SAT"],
-      rows: sorted.map((h) => [pct(h.porcentajeManguerasSat), pct(h.porcentajeSenalesSat), pct(h.porcentajePruebasSat), pct(h.porcentajeSat)]),
+      cols: ["% Mangueras PEM SAT", "% Mangueras PF SAT", "% Señales SAT", "% Pruebas SAT", "% Total SAT"],
+      rows: sorted.map((h) => [pct(h.porcentajeManguerasSat), pct(h.porcentajeManguerasPfSat), pct(h.porcentajeSenalesSat), pct(h.porcentajePruebasSat), pct(h.porcentajeSat)]),
       chartData: satData,
       lines: [
         { key: "AvanceSAT",   color: "#3B82F6" },
-        { key: "ManguerasPEM", color: "#F97316" },
-        { key: "SeñalesSAT",  color: "#1D4ED8" },
+        { key: "ManguerasPEM", color: "#1D4ED8" },
+        { key: "ManguerasPF",  color: "#F97316" },
+        { key: "SeñalesSAT",  color: "#8B5CF6" },
         { key: "PruebasSAT",  color: "#EC4899" },
       ],
     },
