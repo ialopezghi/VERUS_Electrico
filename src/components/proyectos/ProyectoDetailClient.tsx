@@ -143,13 +143,13 @@ export default function ProyectoDetailClient({ proyecto, codigo }: Props) {
           {mainTab === "AVANCE" ? (
             <AvanceChart historico={proyecto.historicoAvances} codigo={codigo} />
           ) : subTab === "mangueras" ? (
-            <ManguerasTable proyectoId={proyecto.id} fase={fase} mangueras={proyecto.mangueras.filter((m) => m.fase === fase)} />
+            <ManguerasTable key={`mangueras-${fase}`} proyectoId={proyecto.id} fase={fase} mangueras={proyecto.mangueras.filter((m) => m.fase === fase)} />
           ) : subTab === "senales" ? (
-            <SenalesTable proyectoId={proyecto.id} fase={fase} senales={proyecto.signalRecords.filter((s) => s.fase === fase)} />
+            <SenalesTable key={`senales-${fase}`} proyectoId={proyecto.id} fase={fase} senales={proyecto.signalRecords.filter((s) => s.fase === fase)} />
           ) : subTab === "pruebas" ? (
-            <PruebasTable proyectoId={proyecto.id} fase={fase} pruebas={proyecto.protocoloPruebas.filter((p) => p.fase === fase)} />
+            <PruebasTable key={`pruebas-${fase}`} proyectoId={proyecto.id} fase={fase} pruebas={proyecto.protocoloPruebas.filter((p) => p.fase === fase)} />
           ) : (
-            <CanalizacionesTable proyectoId={proyecto.id} fase={fase} canalizaciones={proyecto.canalizaciones.filter((c) => c.fase === fase)} />
+            <CanalizacionesTable key={`canal-${fase}`} proyectoId={proyecto.id} fase={fase} canalizaciones={proyecto.canalizaciones.filter((c) => c.fase === fase)} />
           )}
         </div>
       </div>

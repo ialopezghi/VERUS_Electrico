@@ -27,6 +27,7 @@ function resolverImagen(proyecto: { nombre: string | null; cliente: string | nul
   if (texto.includes("BAUX") || texto.includes("HHVF") || texto.includes("MCB"))         return "/img-baux.png"
   if (texto.includes("ARCELOR") || texto.includes("FNG"))                                return "/img-arcelor.png"
   if (texto.includes("FD2") || texto.includes("CONSTELLIUM") || texto.includes("RAN-R")) return "/img-fd2.png"
+  if (texto.includes("ARZYZ") || texto.includes("RMA"))                                  return "/img-arzyz.png"
   if (texto.includes("GLOBALCAST") || texto.includes("FRB") || texto.includes("KBV"))    return "/ghi-machine.png"
   return "/ghi-machine.png"
 }
