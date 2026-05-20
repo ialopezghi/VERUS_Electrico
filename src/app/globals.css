@@ -86,6 +86,28 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 2px; }
 
+/* ProyectoCard — cuerpo responsive */
+.proyecto-card-body {
+  display: grid;
+  grid-template-columns: 130px 1fr 160px;
+}
+@media (max-width: 640px) {
+  .proyecto-card-body {
+    grid-template-columns: 1fr;
+  }
+  .proyecto-card-col-img {
+    border-right: none !important;
+    border-bottom: 1px solid #E0E0E0;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    gap: 16px !important;
+  }
+  .proyecto-card-col-bars {
+    border-right: none !important;
+    border-bottom: 1px solid #E0E0E0;
+  }
+}
+
 /* Toggle switch */
 .toggle-switch {
   position: relative;

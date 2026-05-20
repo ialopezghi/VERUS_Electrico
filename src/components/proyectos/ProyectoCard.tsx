@@ -24,30 +24,39 @@ interface Props {
 function resolverImagen(proyecto: { nombre: string | null; cliente: string | null; tipoEquipo: string | null; imagenUrl?: string | null }) {
   if (proyecto.imagenUrl) return proyecto.imagenUrl
   const texto = `${proyecto.nombre ?? ""} ${proyecto.cliente ?? ""} ${proyecto.tipoEquipo ?? ""}`.toUpperCase()
-  if (texto.includes("BAUX") || texto.includes("HHVF") || texto.includes("MCB"))        return "/img-baux.png"
-  if (texto.includes("ARCELOR") || texto.includes("FNG"))                               return "/img-arcelor.png"
+  if (texto.includes("BAUX") || texto.includes("HHVF") || texto.includes("MCB"))         return "/img-baux.png"
+  if (texto.includes("ARCELOR") || texto.includes("FNG"))                                return "/img-arcelor.png"
   if (texto.includes("FD2") || texto.includes("CONSTELLIUM") || texto.includes("RAN-R")) return "/img-fd2.png"
-  if (texto.includes("GLOBALCAST") || texto.includes("FRB") || texto.includes("KBV"))   return "/ghi-machine.png"
+  if (texto.includes("GLOBALCAST") || texto.includes("FRB") || texto.includes("KBV"))    return "/ghi-machine.png"
   return "/ghi-machine.png"
 }
 
-const estadoConfig: Record<string, { bg: string; text: string; label: string }> = {
-  en_proceso: { bg: "#1C1C1C", text: "#F59E0B",  label: "En Proceso" },
-  activo:     { bg: "#1C1C1C", text: "#22C55E",  label: "Activo" },
-  completado: { bg: "#1C1C1C", text: "#959595",  label: "Finalizado" },
-  pausado:    { bg: "#1C1C1C", text: "#EF4444",  label: "Pausado" },
-  ofertado:   { bg: "#1C1C1C", text: "#A78BFA",  label: "Ofertado" },
-  cancelado:  { bg: "#1C1C1C", text: "#959595",  label: "Cancelado" },
+const estadoConfig: Record<string, { label: string; color: string }> = {
+  en_proceso: { label: "En Proceso", color: "#F59E0B" },
+  activo:     { label: "Activo",     color: "#22C55E" },
+  completado: { label: "Finalizado", color: "#959595" },
+  pausado:    { label: "Pausado",    color: "#EF4444" },
+  ofertado:   { label: "Ofertado",   color: "#A78BFA" },
+  cancelado:  { label: "Cancelado",  color: "#959595" },
 }
 
-function KpiRow({ label, value, color = "#C0022C" }: { label: string; value: number; color?: string }) {
+function KpiList({ kpi, label }: { kpi: KpiResult; label: "FAT" | "SAT" }) {
+  const isSat = label === "SAT"
+  const rows = [
+    { name: "Mangueras", value: kpi.pctMangueras, hasData: kpi.totalMangueras > 0 },
+    { name: "Señales",   value: kpi.pctSenales,   hasData: kpi.totalSenales > 0 },
+    { name: "Pruebas",   value: kpi.pctPruebas,   hasData: kpi.totalPruebas > 0 },
+  ]
   return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 11, color: "#959595" }}>{label}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color }}>{fmt(value)}%</span>
-      </div>
-      <ProgressBar value={value} color={color} height={5} />
+    <div>
+      {rows.map(({ name, value, hasData }) => (
+        <div key={name} style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+          <span style={{ fontSize: 12, color: "#595959" }}>{name}:</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: hasData ? "#333333" : "#C8C8C8" }}>
+            {hasData ? `${fmt(value)}%` : "—"}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -56,14 +65,17 @@ export default function ProyectoCard({ proyecto }: Props) {
   const estado = estadoConfig[proyecto.estado] ?? estadoConfig.en_proceso
   const imagen = resolverImagen(proyecto)
 
+  const fatHasData = proyecto.fat.totalMangueras > 0 || proyecto.fat.totalSenales > 0 || proyecto.fat.totalPruebas > 0
+  const satHasData = proyecto.sat.totalMangueras > 0 || proyecto.sat.totalSenales > 0 || proyecto.sat.totalPruebas > 0
+
   return (
-    <Link href={`/proyectos/${proyecto.id}`} style={{ textDecoration: "none" }}>
+    <Link href={`/proyectos/${proyecto.id}`} style={{ textDecoration: "none", display: "block" }}>
       <div
         style={{
           background: "#FEFEFE",
           borderRadius: 4,
           border: "1px solid #E0E0E0",
-          boxShadow: "0 1px 2px rgba(11,11,12,0.06), 0 1px 3px rgba(11,11,12,0.08)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
           transition: "box-shadow 0.15s, transform 0.15s",
           cursor: "pointer",
           overflow: "hidden",
@@ -73,21 +85,21 @@ export default function ProyectoCard({ proyecto }: Props) {
           ;(e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)"
         }}
         onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 2px rgba(11,11,12,0.06), 0 1px 3px rgba(11,11,12,0.08)"
+          ;(e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.07)"
           ;(e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"
         }}
       >
-        {/* Header */}
-        <div style={{ padding: "12px 14px 8px", borderBottom: "1px solid #F2F2F2", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontSize: 11, color: "#959595", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 2 }}>
+        {/* Cabecera: código + estado */}
+        <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #F0F0F0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: "#959595", fontWeight: 500, letterSpacing: "0.04em", marginBottom: 2 }}>
               {proyecto.codigo}
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#333333", lineHeight: 1.2 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.2, marginBottom: 2 }}>
               {proyecto.nombre ?? proyecto.codigo}
             </div>
             {proyecto.ubicacion && (
-              <div style={{ fontSize: 11, color: "#959595", marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
+              <div style={{ fontSize: 11, color: "#959595", display: "flex", alignItems: "center", gap: 3 }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
                 </svg>
@@ -96,89 +108,69 @@ export default function ProyectoCard({ proyecto }: Props) {
             )}
           </div>
           {/* Badge estado */}
-          <span style={{
-            padding: "3px 8px", borderRadius: 2,
-            fontSize: 10, fontWeight: 700,
-            background: estado.bg, color: estado.text,
-            textTransform: "uppercase", letterSpacing: "0.06em",
-            whiteSpace: "nowrap", border: `1px solid ${estado.text}33`,
+          <div style={{
+            display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
+            background: "#1C1C1C", borderRadius: 3, padding: "3px 9px",
           }}>
-            {estado.label}
-          </span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={estado.color} strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 700, color: estado.color, letterSpacing: "0.04em" }}>
+              {estado.label}
+            </span>
+          </div>
         </div>
 
-        {/* Cuerpo: imagen + KPIs */}
-        <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 0 }}>
+        {/* Cuerpo: 3 columnas */}
+        <div className="proyecto-card-body">
 
-          {/* Imagen máquina */}
-          <div style={{ background: "#F2F2F2", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 10px", gap: 10, borderRight: "1px solid #E0E0E0" }}>
+          {/* Col 1: imagen + avance total */}
+          <div className="proyecto-card-col-img" style={{
+            background: "#F7F7F7", borderRight: "1px solid #E0E0E0",
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", padding: "12px 10px", gap: 8,
+          }}>
             <img
               src={imagen}
               alt={proyecto.tipoEquipo ?? "Equipo GHI"}
-              style={{ width: "100%", maxWidth: 110, height: 90, objectFit: "contain", display: "block" }}
+              style={{ width: "100%", maxWidth: 100, height: 80, objectFit: "contain" }}
             />
-            {/* Total en la imagen */}
-            <div style={{ textAlign: "center", width: "100%" }}>
-              <div style={{ fontSize: 10, color: "#959595", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>
-                Avance Total
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#595959", marginBottom: 2 }}>
+                Avance Total (%): <strong style={{ color: "#333333" }}>{fmt(proyecto.total)}</strong>
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#333333", lineHeight: 1 }}>
-                {fmt(proyecto.total)}<span style={{ fontSize: 11, fontWeight: 400 }}>%</span>
-              </div>
-              <div style={{ marginTop: 5 }}>
-                <ProgressBar value={proyecto.total} color="#C0022C" height={5} />
-              </div>
+              <ProgressBar value={proyecto.total} color="#C0022C" height={7} />
             </div>
           </div>
 
-          {/* KPIs FAT + SAT */}
-          <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 0 }}>
-
+          {/* Col 2: barras FAT + SAT */}
+          <div className="proyecto-card-col-bars" style={{ padding: "14px 16px", borderRight: "1px solid #E0E0E0", display: "flex", flexDirection: "column", justifyContent: "center", gap: 14 }}>
             {/* FAT */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#333333", textTransform: "uppercase", letterSpacing: "0.08em" }}>FAT</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: "#C0022C" }}>{fmt(proyecto.fat.pctFase)}<span style={{ fontSize: 11, fontWeight: 400 }}>%</span></span>
+            <div>
+              <div style={{ fontSize: 12, color: "#595959", marginBottom: 5 }}>
+                Avance FAT (%): <strong style={{ color: "#333333" }}>{fatHasData ? fmt(proyecto.fat.pctFase) : "—"}</strong>
               </div>
-              <ProgressBar value={proyecto.fat.pctFase} color="#C0022C" height={5} />
-              <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "2px 8px" }}>
-                {[
-                  { label: "Mangueras", v: proyecto.fat.pctMangueras },
-                  { label: "Señales",   v: proyecto.fat.pctSenales },
-                  { label: "Pruebas",   v: proyecto.fat.pctPruebas },
-                ].map(({ label, v }) => (
-                  <div key={label} style={{ fontSize: 10, color: "#959595" }}>
-                    <span style={{ display: "block", color: "#333333", fontWeight: 500 }}>{fmt(v)}%</span>
-                    {label}
-                  </div>
-                ))}
-              </div>
+              <ProgressBar value={fatHasData ? proyecto.fat.pctFase : 0} color="#C0022C" height={10} />
             </div>
-
-            <div style={{ height: 1, background: "#F2F2F2", marginBottom: 10 }} />
-
             {/* SAT */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#333333", textTransform: "uppercase", letterSpacing: "0.08em" }}>SAT</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: "#333333" }}>{fmt(proyecto.sat.pctFase)}<span style={{ fontSize: 11, fontWeight: 400 }}>%</span></span>
+              <div style={{ fontSize: 12, color: "#595959", marginBottom: 5 }}>
+                Avance SAT (%): <strong style={{ color: "#333333" }}>{satHasData ? fmt(proyecto.sat.pctFase) : "—"}</strong>
               </div>
-              <ProgressBar value={proyecto.sat.pctFase} color="#333333" height={5} />
-              <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "2px 8px" }}>
-                {[
-                  { label: "Mangueras", v: proyecto.sat.pctMangueras },
-                  { label: "Señales",   v: proyecto.sat.pctSenales },
-                  { label: "Pruebas",   v: proyecto.sat.pctPruebas },
-                ].map(({ label, v }) => (
-                  <div key={label} style={{ fontSize: 10, color: "#959595" }}>
-                    <span style={{ display: "block", color: "#333333", fontWeight: 500 }}>{fmt(v)}%</span>
-                    {label}
-                  </div>
-                ))}
-              </div>
+              <ProgressBar value={satHasData ? proyecto.sat.pctFase : 0} color="#C0022C" height={10} />
             </div>
-
           </div>
+
+          {/* Col 3: KPIs FAT + SAT en texto */}
+          <div style={{ padding: "14px 14px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
+            {/* FAT KPIs */}
+            <KpiList kpi={proyecto.fat} label="FAT" />
+            <div style={{ height: 1, background: "#EFEFEF" }} />
+            {/* SAT KPIs */}
+            <KpiList kpi={proyecto.sat} label="SAT" />
+          </div>
+
         </div>
       </div>
     </Link>
