@@ -30,6 +30,7 @@ export default async function ProyectoDetailPage({ params }: Props) {
   if (!proyecto) notFound()
 
   const codigo = codProyecto(proyecto.orden, proyecto.idh)
+  const proyectoPlain = JSON.parse(JSON.stringify(proyecto))
 
-  return <ProyectoDetailClient proyecto={proyecto} codigo={codigo} />
+  return <ProyectoDetailClient proyecto={proyectoPlain} codigo={codigo} />
 }
