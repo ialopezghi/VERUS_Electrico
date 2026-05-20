@@ -48,7 +48,7 @@ model User {
 
 model Proyecto {
   id         String         @id @default(uuid()) @db.Uuid
-  idh        String         @unique
+  idh        String
   orden      Int
   nombre     String?
   cliente    String?
@@ -89,6 +89,7 @@ model Proyecto {
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz
   version   Int       @default(1)
 
+  @@unique([orden, idh])
   @@map("proyecto")
   @@index([deletedAt])
   @@index([estado])
