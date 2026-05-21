@@ -6,24 +6,6 @@ import ProyectosClient from "@/components/proyectos/ProyectosClient"
 export const dynamic = "force-dynamic"
 
 export default async function ProyectosPage() {
-  try {
-    return await renderPage()
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error ? err.stack ?? "" : ""
-    const dbUrl = process.env.DATABASE_URL
-    const dbPreview = dbUrl ? `${dbUrl.slice(0, 30)}... (length=${dbUrl.length})` : "NOT SET"
-    return (
-      <div style={{ padding: 40, fontFamily: "monospace", background: "#fff0f0", minHeight: "100vh" }}>
-        <h2 style={{ color: "#C0022C", marginBottom: 16 }}>Error en /proyectos</h2>
-        <pre style={{ background: "#fee", padding: 16, borderRadius: 4, overflowX: "auto", fontSize: 13 }}>{msg}</pre>
-        <pre style={{ background: "#f5f5f5", padding: 16, borderRadius: 4, overflowX: "auto", fontSize: 11, marginTop: 12 }}>DATABASE_URL preview: {dbPreview}</pre>
-      </div>
-    )
-  }
-}
-
-async function renderPage() {
   const proyectos = await db.proyecto.findMany({
     where: { deletedAt: null },
     include: {
