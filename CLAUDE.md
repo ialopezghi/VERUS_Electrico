@@ -7,7 +7,7 @@ App interna de GHI Hornos Industriales S.L. para seguimiento de montaje eléctri
 ## Stack técnico
 
 - **Framework**: Next.js 16 (App Router, Server + Client Components)
-- **Auth**: Auth.js v5 (`next-auth@5.0.0-beta.31`) con MicrosoftEntraID + dev bypass
+- **Auth**: ~~Auth.js v5~~ **Sin login** — app pública accesible sin credenciales (auth.ts sigue presente pero no se usa en páginas)
 - **ORM**: Prisma 5 (`prisma@5`) con PostgreSQL
 - **Base de datos**: Neon PostgreSQL (Frankfurt, eu-central-1)
 - **CSS**: Tailwind CSS v4 con @theme CSS-first + tw-animate-css
@@ -35,10 +35,11 @@ git push
 
 ## Deploy — Vercel
 
-**Estado**: ✅ Live en `https://verus-electrico.vercel.app`
+**Estado**: ✅ Live en `https://verus-electrico.vercel.app`  
+**Acceso**: público — cualquiera con el link entra directamente, sin login
 
 Variables de entorno configuradas en Vercel:
-- `DATABASE_URL` → URL de Neon PostgreSQL
+- `DATABASE_URL` → URL de Neon PostgreSQL ⚠️ **tiene un espacio inicial** — el código lo recorta automáticamente en `scripts/build.js` y `src/lib/db.ts`. Corregir en Vercel si es posible: quitar el espacio al inicio del valor.
 - `AUTH_SECRET` → `ghi-verus-electrico-secret-2026-prod`
 - `NEXTAUTH_URL` → `https://verus-electrico.vercel.app` (sin espacios, exacto)
 - `AUTH_MICROSOFT_ENTRA_ID_ID` → Client ID de la Azure App Registration "VERUS Electrico"
@@ -48,21 +49,16 @@ Variables de entorno configuradas en Vercel:
 **Azure App Registration** (tenant GHI):
 - Nombre: `VERUS Electrico`
 - Redirect URI: `https://verus-electrico.vercel.app/api/auth/callback/microsoft-entra-id`
-- Usuarios asignados: Imanolia Lopez, Iker Lasso (como colaboradores)
 
 **Errores ya resueltos en el build de Vercel:**
 1. TS error `tenantId` en auth.ts → `typescript: { ignoreBuildErrors: true }` en next.config.mjs
-2. Prisma client no generado → `"build": "prisma generate && next build"` en package.json
+2. Prisma client no generado → build script `node scripts/build.js` en package.json
 3. `eslint` config en next.config.mjs no soportado en Next.js 16 → eliminado
 4. `NEXTAUTH_URL` con espacio doble → corregido en variables Vercel
 5. `useSearchParams()` sin Suspense → `LoginForm` envuelta en `<Suspense>` en login/page.tsx
 6. `domain_hint: "ghifurnaces.com"` en auth.ts → redirigía al SSO corporativo de GHI → eliminado
 7. Turbopack parse error en GestionClient `if...else` sin llaves → añadir `{ }` siempre
-
-**⚠️ Pendiente — OAuthCallbackError en login Microsoft:**
-- Login con cuenta @ghifurnaces.com da `OAuthCallbackError` en producción
-- APLAZADO — por ahora usar solo "Acceso de desarrollo" (dev bypass)
-- Posible fix: añadir `AUTH_URL=https://verus-electrico.vercel.app` a Vercel env vars
+8. `DATABASE_URL` con espacio inicial → `scripts/build.js` recorta antes de `prisma generate`; `db.ts` usa `datasources` con URL recortada en runtime
 
 ---
 
@@ -81,7 +77,7 @@ npm run dev
 # → http://localhost:3000
 ```
 
-Login de desarrollo: cualquier email @ghifurnaces.com en "Acceso de desarrollo".
+No hay login — la app abre directamente en `/proyectos`.
 El hot reload es automático — no hace falta reiniciar al editar ficheros.
 
 ### ⚠️ Problema ruta larga en Windows (solo si clonas en OneDrive con ruta muy larga)
@@ -119,6 +115,7 @@ npm run build         # build producción (prisma generate + next build)
 | `HistoricoAvance` | `historico_avance` | `porcentajeSenalesFat` / `porcentajeSenalesSat` (sin ñ) |
 | `User` | `user` | `rol: RolUsuario` |
 | `Asignacion` | `asignacion` | Relación usuario↔proyecto |
+| `CustomColumnDef` | `custom_column_def` | Columnas personalizadas por proyecto+tabla |
 
 ### Enums
 - `FaseMontaje`: `FAT | SAT`
@@ -138,9 +135,10 @@ npm run build         # build producción (prisma generate + next build)
 ```
 verus-electrico/
 ├── auth.ts                          # Auth.js config (root, NO importar en middleware con @/)
-├── middleware.ts                    # Protección de rutas (importa ./auth)
+├── middleware.ts                    # Pass-through (sin auth — acceso libre)
 ├── next.config.mjs                  # output:standalone, typescript.ignoreBuildErrors:true
-├── package.json                     # build: "prisma generate && next build"
+├── package.json                     # build: "node scripts/build.js"
+├── scripts/build.js                 # Recorta DATABASE_URL antes de prisma generate + next build
 ├── prisma/
 │   ├── schema.prisma
 │   ├── seed.ts                      # Datos de prueba iniciales
@@ -162,7 +160,7 @@ verus-electrico/
 │   ├── app/
 │   │   ├── layout.tsx               # Root layout — SIN Google Fonts (Gotham es local)
 │   │   ├── globals.css              # @font-face Gotham + Tailwind v4 @theme GHI + toggle
-│   │   ├── (auth)/login/page.tsx    # LoginForm + export default con <Suspense>
+│   │   ├── (auth)/login/page.tsx    # Redirige a /proyectos (sin formulario de login)
 │   │   ├── proyectos/
 │   │   │   ├── layout.tsx           # Wraps AppShell — NO añadir AppShell en páginas hijas
 │   │   │   ├── page.tsx             # Dashboard KPIs + ProyectosClient
@@ -204,7 +202,10 @@ verus-electrico/
 │   │       ├── Modal.tsx            # Requiere prop open={boolean} — sin él no renderiza
 │   │       ├── FormField.tsx        # Label uppercase + inputStyle/selectStyle GHI
 │   │       ├── FlagCell.tsx         # SI/NO/N/A → Boolean?
-│   │       ├── ColSelector.tsx      # Selector de columnas visibles (tabla proyectos)
+│   │       ├── ColSelector.tsx      # Selector de columnas visibles (tabla proyectos dashboard)
+│   │   ├── api/
+│   │   │   └── proyectos/[id]/columnas/route.ts     # GET/POST columnas personalizadas
+│   │   │   └── proyectos/[id]/columnas/[colId]/route.ts  # DELETE/PATCH columna
 │   │       ├── Toggle.tsx
 │   │       ├── KpiCard.tsx
 │   │       └── ProgressBar.tsx      # #C0022C por defecto, radius 2px
@@ -336,17 +337,21 @@ Si se pasa `asignaciones`, hace deleteMany + createMany (reemplaza todas las asi
 | Modal no renderiza | Falta prop `open={true}` | `<Modal open={true} ...>` — sin `open` devuelve null |
 | `Invalid value for argument rol: SUPERVISOR` | Prisma client compilado sin SUPERVISOR | Usar `$executeRaw` en scripts de seed; en API funciona porque el JS fue regenerado por `prisma db push` |
 | `EPERM rename query_engine-windows.dll` | Dev server bloquea el DLL | Parar dev server antes de `prisma generate` |
+| `DATABASE_URL` espacio inicial en Vercel | Vercel guardó la var con espacio | `scripts/build.js` recorta; `db.ts` usa `datasources`. Fix definitivo: editar var en Vercel y quitar el espacio |
+| App pide login inesperadamente | Queda sesión caducada de next-auth en cookie | Limpiar cookies del navegador en el dominio vercel.app |
 
 ---
 
-## Estado del proyecto (20/05/2026)
+## Estado del proyecto (21/05/2026)
 
 ### Completado ✅
-- Autenticación (Microsoft Entra ID + dev bypass)
-- Dashboard proyectos con KPIs FAT/SAT/Total — vista tarjetas y tabla
-- Filtros por estado (Todos/Finalizado/En proceso/Activo) + dropdown por cliente
+- **App pública sin login** — acceso directo vía https://verus-electrico.vercel.app
+- Dashboard proyectos con KPIs FAT/SAT/Total — vista tarjetas y tabla con selector de columnas
+- Filtros por estado (Todos/Finalizado/En proceso/Activo) + dropdown por cliente/pedido
 - Detalle proyecto: tabs FAT/SAT/AVANCE estilo GHI
 - Tablas edición inline: mangueras, señales, pruebas, canalizaciones
+- **Columnas personalizadas** — botón `+ Columna` en Mangueras/Señales/Pruebas, edición inline, eliminación
+- **Exportar a Excel** — botón único arriba a la derecha por tabla (mangueras/señales/pruebas), incluye columnas personalizadas
 - Gestión proyectos: lista inline editable (fase, estado, fechas, pausar)
 - Página usuarios: búsqueda, toggle activo inline, modal asignaciones proyectos + edición
 - Gráfico histórico de avance — sub-tabs FAT/SAT/TOTAL, series con nombres PowerApps
@@ -356,12 +361,12 @@ Si se pasa `asignaciones`, hace deleteMany + createMany (reemplaza todas las asi
 - 25 proyectos activos en BD coincidiendo con PowerApps
 
 ### Pendiente / Próximas mejoras ❌
-1. **Vista personalizada por usuario** — operarios ven solo sus proyectos asignados (filtrar por session userId si rol OPERARIO/VISOR)
+1. **Vista personalizada por usuario** — operarios ven solo sus proyectos asignados
 2. **Diseño responsive móvil/tablet** — técnicos en campo
-3. **Exportar a Excel** — botón por tabla (mangueras/señales/pruebas), librería `xlsx`
-4. **Login Microsoft en producción** — OAuthCallbackError pendiente de resolver
-5. **Deploy Azure Container Apps** — objetivo final (Bicep + GitHub Actions)
-6. **Migración datos reales** desde PowerApps/Dataverse (pendiente exportación por Imanolia)
+3. **Login Microsoft en producción** — aplazado; app ya es pública sin login
+4. **Deploy Azure Container Apps** — objetivo final (Bicep + GitHub Actions)
+5. **Migración datos reales** desde PowerApps/Dataverse (pendiente exportación por Imanolia)
+6. **Fix definitivo DATABASE_URL** — quitar el espacio inicial en Vercel env vars manualmente
 
 ---
 
