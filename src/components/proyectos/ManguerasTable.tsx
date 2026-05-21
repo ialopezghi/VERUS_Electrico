@@ -5,6 +5,7 @@ import FlagCell from "@/components/ui/FlagCell"
 import Modal from "@/components/ui/Modal"
 import { FormField, inputStyle } from "@/components/ui/FormField"
 import ColSelector, { ColDef } from "@/components/ui/ColSelector"
+import { exportToExcel, flagLabel } from "@/lib/exportExcel"
 
 type FlagValue = boolean | null
 
@@ -131,10 +132,29 @@ export default function ManguerasTable({ proyectoId, fase, mangueras: initial }:
 
   const colSpan = COLS.filter((c) => v(c.key)).length
 
+  function handleExport() {
+    exportToExcel(data.map((m) => ({
+      "IMEI":             m.imei,
+      "Origen":           m.origen ?? "",
+      "Conect. origen":   flagLabel(m.conectadoEnOrigen),
+      "Tendido origen":   flagLabel(m.tendidoEnOrigen),
+      "Destino":          m.destino ?? "",
+      "Tendido destino":  flagLabel(m.tendidoEnDestino),
+      "Conect. destino":  flagLabel(m.conectadoEnDestino),
+      "Metros":           m.metros ?? "",
+      "Descripción":      m.descripcion ?? "",
+      "Comentarios":      m.comentarios ?? "",
+    })), `mangueras_${fase}`)
+  }
+
   return (
     <>
       {/* Toolbar */}
-      <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderBottom: "1px solid #F3F4F6", background: "#FAFAFA" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderBottom: "1px solid #F3F4F6", background: "#FAFAFA" }}>
+        <button onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 2, border: "1px solid #E0E0E0", background: "white", cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#595959", letterSpacing: "0.04em" }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar
+        </button>
         <ColSelector cols={COLS} visible={cols} onChange={toggleCol} />
       </div>
 
