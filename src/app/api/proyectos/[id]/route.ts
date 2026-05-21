@@ -1,12 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "../../../../../auth"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 
 interface Params { params: Promise<{ id: string }> }
 
 export async function GET(_: NextRequest, { params }: Params) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
   const p = await db.proyecto.findUnique({ where: { id, deletedAt: null } })
@@ -15,12 +12,10 @@ export async function GET(_: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
   const body = await req.json()
-  const email = session.user.email ?? "unknown"
+  const email = "system"
 
   const p = await db.proyecto.update({
     where: { id },

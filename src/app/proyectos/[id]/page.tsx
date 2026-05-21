@@ -1,6 +1,5 @@
 import { db } from "@/lib/db"
-import { auth } from "../../../../auth"
-import { redirect, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import { codProyecto } from "@/lib/kpi"
 import ProyectoDetailClient from "@/components/proyectos/ProyectoDetailClient"
 
@@ -11,9 +10,6 @@ interface Props {
 }
 
 export default async function ProyectoDetailPage({ params }: Props) {
-  const session = await auth()
-  if (!session) redirect("/login")
-
   const { id } = await params
 
   const proyecto = await db.proyecto.findUnique({

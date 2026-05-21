@@ -1,6 +1,4 @@
 import { db } from "@/lib/db"
-import { auth } from "../../../auth"
-import { redirect } from "next/navigation"
 import { codProyecto, calcKpiFase } from "@/lib/kpi"
 import KpiCard from "@/components/ui/KpiCard"
 import ProyectosClient from "@/components/proyectos/ProyectosClient"
@@ -8,9 +6,6 @@ import ProyectosClient from "@/components/proyectos/ProyectosClient"
 export const dynamic = "force-dynamic"
 
 export default async function ProyectosPage() {
-  const session = await auth()
-  if (!session) redirect("/login")
-
   const proyectos = await db.proyecto.findMany({
     where: { deletedAt: null },
     include: {
