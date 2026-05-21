@@ -83,6 +83,7 @@ model Proyecto {
   canalizaciones   Canalizacion[]
   historicoAvances HistoricoAvance[]
   asignaciones     Asignacion[]
+  customColumnDefs CustomColumnDef[]
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime  @updatedAt      @map("updated_at") @db.Timestamptz
@@ -114,6 +115,7 @@ model Manguera {
   tendidoEnOrigen    Boolean?    @map("tendido_en_origen")
   tendidoEnDestino   Boolean?    @map("tendido_en_destino")
   conectadoEnDestino Boolean?    @map("conectado_en_destino")
+  extra              Json?       @db.JsonB
   revision           Int         @default(0)
   proyecto           Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
 
@@ -142,6 +144,7 @@ model ProtocoloPrueba {
   valorReal     String?     @map("valor_real")
   comprobado    Boolean     @default(false)
   comentarios   String?
+  extra         Json?       @db.JsonB
   revision      Int         @default(0)
   proyecto      Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
 
@@ -168,6 +171,7 @@ model SignalRecord {
   signalName    String      @map("signal_name")
   checkedStatus String      @default("") @map("checked_status")
   comentarios   String?
+  extra         Json?       @db.JsonB
   revision      Int         @default(0)
   proyecto      Proyecto    @relation(fields: [proyectoId], references: [id], onDelete: Restrict)
 
@@ -253,6 +257,20 @@ model Asignacion {
   @@map("asignacion")
   @@index([userId])
   @@index([proyectoId])
+}
+
+model CustomColumnDef {
+  id         String   @id @default(uuid()) @db.Uuid
+  proyectoId String   @map("proyecto_id") @db.Uuid
+  tabla      String   // "manguera" | "senhal" | "prueba"
+  nombre     String
+  orden      Int      @default(0)
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy  String   @map("created_by")
+
+  @@map("custom_column_def")
+  @@index([proyectoId, tabla])
 }
 
 model AuditLog {

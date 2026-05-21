@@ -24,6 +24,7 @@ export default async function ProyectoDetailPage({ params }: Props) {
       protocoloPruebas: { where: { deletedAt: null }, orderBy: { identificador: "asc" } },
       canalizaciones:   { where: { deletedAt: null }, orderBy: { imei: "asc" } },
       historicoAvances: { orderBy: { fecha: "asc" } },
+      customColumnDefs: { orderBy: [{ tabla: "asc" }, { orden: "asc" }, { createdAt: "asc" }] },
     },
   })
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useCallback } from "react"
 import ManguerasTable from "./ManguerasTable"
 import SenalesTable from "./SenalesTable"
 import PruebasTable from "./PruebasTable"
@@ -11,12 +11,14 @@ type Fase = "FAT" | "SAT"
 type SubTab = "mangueras" | "senales" | "pruebas" | "canalizaciones"
 type MainTab = "FAT" | "SAT" | "AVANCE"
 
+interface ColDef { id: string; nombre: string; tabla: string; orden: number }
+
 interface Props {
   proyecto: {
     id: string; idh: string; orden: number; nombre: string | null
     cliente: string | null; ubicacion: string | null; estado: string
     mangueras: any[]; signalRecords: any[]; protocoloPruebas: any[]
-    canalizaciones: any[]; historicoAvances: any[]
+    canalizaciones: any[]; historicoAvances: any[]; customColumnDefs: ColDef[]
   }
   codigo: string
 }
@@ -40,6 +42,8 @@ const estadoConfig: Record<string, { bg: string; text: string; label: string }> 
 export default function ProyectoDetailClient({ proyecto, codigo }: Props) {
   const [mainTab, setMainTab] = useState<MainTab>("FAT")
   const [subTab, setSubTab] = useState<SubTab>("mangueras")
+  const exportFnRef = useRef<(() => void) | null>(null)
+  const registerExport = useCallback((fn: (() => void) | null) => { exportFnRef.current = fn }, [])
 
   const fase = mainTab as Fase
   const estado = estadoConfig[proyecto.estado] ?? estadoConfig.en_proceso
@@ -118,23 +122,25 @@ export default function ProyectoDetailClient({ proyecto, codigo }: Props) {
                 {st.label}
               </button>
             ))}
-            <div style={{ marginLeft: "auto" }}>
-              <button style={{
-                padding: "5px 12px",
-                background: "transparent",
-                color: "#959595",
-                border: "1px solid #E0E0E0",
-                borderRadius: 2,
-                fontSize: 11,
-                fontWeight: 500,
-                cursor: "pointer",
-                letterSpacing: "0.04em",
-                display: "flex", alignItems: "center", gap: 5,
-              }}>
-                <img src="/icons/dark/Download cloud.svg" alt="" width={13} height={13} />
-                Exportar
-              </button>
-            </div>
+            {subTab !== "canalizaciones" && (
+              <div style={{ marginLeft: "auto" }}>
+                <button onClick={() => exportFnRef.current?.()} style={{
+                  padding: "5px 12px",
+                  background: "transparent",
+                  color: "#959595",
+                  border: "1px solid #E0E0E0",
+                  borderRadius: 2,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  letterSpacing: "0.04em",
+                  display: "flex", alignItems: "center", gap: 5,
+                }}>
+                  <img src="/icons/dark/Download cloud.svg" alt="" width={13} height={13} />
+                  Exportar
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -143,11 +149,11 @@ export default function ProyectoDetailClient({ proyecto, codigo }: Props) {
           {mainTab === "AVANCE" ? (
             <AvanceChart historico={proyecto.historicoAvances} codigo={codigo} />
           ) : subTab === "mangueras" ? (
-            <ManguerasTable key={`mangueras-${fase}`} proyectoId={proyecto.id} fase={fase} mangueras={proyecto.mangueras.filter((m) => m.fase === fase)} />
+            <ManguerasTable key={`mangueras-${fase}`} proyectoId={proyecto.id} fase={fase} mangueras={proyecto.mangueras.filter((m) => m.fase === fase)} columnDefs={proyecto.customColumnDefs.filter((c) => c.tabla === "manguera")} registerExport={registerExport} />
           ) : subTab === "senales" ? (
-            <SenalesTable key={`senales-${fase}`} proyectoId={proyecto.id} fase={fase} senales={proyecto.signalRecords.filter((s) => s.fase === fase)} />
+            <SenalesTable key={`senales-${fase}`} proyectoId={proyecto.id} fase={fase} senales={proyecto.signalRecords.filter((s) => s.fase === fase)} columnDefs={proyecto.customColumnDefs.filter((c) => c.tabla === "senhal")} registerExport={registerExport} />
           ) : subTab === "pruebas" ? (
-            <PruebasTable key={`pruebas-${fase}`} proyectoId={proyecto.id} fase={fase} pruebas={proyecto.protocoloPruebas.filter((p) => p.fase === fase)} />
+            <PruebasTable key={`pruebas-${fase}`} proyectoId={proyecto.id} fase={fase} pruebas={proyecto.protocoloPruebas.filter((p) => p.fase === fase)} columnDefs={proyecto.customColumnDefs.filter((c) => c.tabla === "prueba")} registerExport={registerExport} />
           ) : (
             <CanalizacionesTable key={`canal-${fase}`} proyectoId={proyecto.id} fase={fase} canalizaciones={proyecto.canalizaciones.filter((c) => c.fase === fase)} />
           )}
