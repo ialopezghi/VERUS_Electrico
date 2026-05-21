@@ -7,25 +7,12 @@ import ProyectosClient from "@/components/proyectos/ProyectosClient"
 
 export const dynamic = "force-dynamic"
 
-const ROLES_RESTRINGIDOS = ["OPERARIO", "VISOR"]
-
 export default async function ProyectosPage() {
   const session = await auth()
   if (!session) redirect("/login")
 
-  const dbUser = await db.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true, rol: true, asignaciones: { select: { proyectoId: true } } },
-  })
-
-  const esRestringido = ROLES_RESTRINGIDOS.includes(dbUser?.rol ?? "")
-  const proyectosIds  = dbUser?.asignaciones.map((a) => a.proyectoId) ?? []
-
   const proyectos = await db.proyecto.findMany({
-    where: {
-      deletedAt: null,
-      ...(esRestringido ? { id: { in: proyectosIds } } : {}),
-    },
+    where: { deletedAt: null },
     include: {
       mangueras:        { where: { deletedAt: null } },
       signalRecords:    { where: { deletedAt: null } },
